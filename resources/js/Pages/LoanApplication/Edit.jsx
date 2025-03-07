@@ -72,9 +72,10 @@ export default function Edit({ loan, loanTypes }) {
 
     // Saving state (unchanged)
     const [isSaving, setIsSaving] = useState(false);
+    const [isNexting, setIsNexting] = useState(false);
 
     const [filePreviewUrl, setFilePreviewUrl] = useState(null); // Track the URL of file
-     const [applicationFormError, setApplicationFormError] = useState('');
+    const [applicationFormError, setApplicationFormError] = useState('');
 
     // Fetch Customers dynamically (using Inertia)
     const fetchCustomers = useCallback((query) => {
@@ -157,6 +158,69 @@ export default function Edit({ loan, loanTypes }) {
 
         } catch (error) {
             setIsSaving(false);
+              console.error('Full error object:', error);  // Log the entire error for inspection
+
+            if (error.response && error.response.data) {
+                console.error('Error data:', error.response.data);
+                setData('errors', error.response.data.errors);
+            } else {
+                console.error("Error updating loan:", error);
+                showAlert('An error occurred while saving the application.');
+            }
+        }
+    };
+
+    const handleNext = async (e) => {
+        //e.preventDefault();
+        // Check if applicationForm is null
+        if (!data.applicationForm && !loan.application_form) {
+            setApplicationFormError('Application Form is required.');
+            return;
+        }
+        setApplicationFormError('');
+
+        setIsNexting(true);
+
+        const formData = new FormData();
+
+        // Explicitly append each field from the data object. Important for correct ordering.
+        formData.append('customer_type', data.customer_type || '');
+        formData.append('first_name', data.first_name || '');
+        formData.append('other_names', data.other_names || '');
+        formData.append('surname', data.surname || '');
+        formData.append('company_name', data.company_name || '');
+        formData.append('email', data.email || '');
+        formData.append('phone', data.phone || '');
+        formData.append('customer_id', data.customer_id || '');  //Important to treat as a string or number depending on your backend
+        formData.append('loanType', data.loanType || '');
+        formData.append('loanAmount', parseFloat(data.loanAmount) || 0);
+        formData.append('loanDuration', parseInt(data.loanDuration, 10) || 0);
+        formData.append('interestRate', parseFloat(data.interestRate) || 0);
+        formData.append('interestAmount', parseFloat(data.interestAmount) || 0);
+        formData.append('monthlyRepayment', parseFloat(data.monthlyRepayment) || 0);
+        formData.append('totalRepayment', parseFloat(data.totalRepayment) || 0);
+        formData.append('stage',2);
+
+        // Append the file if it exists.  Crucially, append even if it's `null` to signal no new file.
+        formData.append('applicationForm', data.applicationForm);
+
+        formData.append('_method', 'PUT'); // Method Spoofing
+
+        try {
+            const response = await axios.post(route('loan0.update', loan.id), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            setIsNexting(false);
+            resetForm();
+
+             //Manually redirect since it is a success
+             window.location.href = route('loan0.index');
+
+        } catch (error) {
+            setIsNexting(false);
               console.error('Full error object:', error);  // Log the entire error for inspection
 
             if (error.response && error.response.data) {
@@ -303,9 +367,7 @@ export default function Edit({ loan, loanTypes }) {
     };
 
     const calculateLoanDetails = (loanAmount, loanDuration, interestRate) => {
-        // Ensure loanAmount and loanDuration are valid numbers
-        console.log('Calculating loan details:', { loanAmount, loanDuration, interestRate }); // Debugging
-
+       
         if (typeof loanAmount !== 'number' || typeof loanDuration !== 'number' || isNaN(loanAmount) || isNaN(loanDuration) || loanAmount <= 0 || loanDuration <= 0) {
             console.warn('Invalid loan parameters. Setting to 0.');
             setData(prevData => ({
@@ -332,6 +394,7 @@ export default function Edit({ loan, loanTypes }) {
             totalRepayment: totalRepayment,
         }));
     };
+
     const showAlert = (message) => {
         setModalState({
             isOpen: false,
@@ -378,15 +441,16 @@ export default function Edit({ loan, loanTypes }) {
 
         if (file) {
             setApplicationFormError('');
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFilePreviewUrl(reader.result);
-            };
-            reader.readAsDataURL(file);
+            // const reader = new FileReader();
+            // reader.onloadend = () => {
+            //     setFilePreviewUrl(reader.result);
+            // };
+            // reader.readAsDataURL(file);
         } else {
             setData('applicationForm', null);
-            setFilePreviewUrl(null);
+            // setFilePreviewUrl(null);
         }
+        
     };
 
     useEffect(() => {
@@ -469,27 +533,54 @@ export default function Edit({ loan, loanTypes }) {
                                             )}
                                         </ul>
                                     )}
+                                   
                                     {/* Display Customer Details After Selection */}
                                     {data.customer_id && (
-                                        <div className="mt-2">
-                                            <p className="text-sm font-medium text-gray-700">
-                                                {data.customer_type === 'company' ? 'Company Name:' : 'Name:'}
-                                                <span className="font-normal">
-                                                    {data.customer_type === 'company' ? data.company_name : `${data.first_name} ${data.surname}`}
-                                                </span>
-                                            </p>
-                                            <p className="text-sm font-medium text-gray-700">
-                                                Email: <span className="font-normal">{data.email}</span>
-                                            </p>
-                                            <p className="text-sm font-medium text-gray-700">
-                                                Phone: <span className="font-normal">{data.phone}</span>
-                                            </p>
-                                        </div>
+                                        <section className="border-b border-gray-200 pb-4">
+                                            <h4 className="text-md font-semibold text-gray-700 mb-3">Customer Information</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Customer Type:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.customer_type}</p>
+                                                </div>
+
+                                                {data.customer_type === 'individual' ? (
+                                                    <>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">First Name:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.first_name || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Other Names:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.other_names || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Surname:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.surname || 'N/A'}</p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700">Company Name:</label>
+                                                        <p className="mt-1 text-sm text-gray-500">{data.company_name || 'N/A'}</p>
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Email:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.email || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Phone:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.phone || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                        </section>
                                     )}
                                 </div>
                             </div>
                             
-                           {/* Loan Details Section */}
+                            {/* Loan Details Section */}
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
@@ -534,64 +625,81 @@ export default function Edit({ loan, loanTypes }) {
                                     </div>
                                 </div>
                             </div> 
-                           
-                            {/* Application Form Upload and Calculation Results */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Dynamic Interest Calculation */}
-                                <div className="space-y-2">
-                                    <h5 className="text-lg font-semibold text-gray-700">Calculation Results</h5>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Interest Rate(%):</strong>
-                                        <span id="interestRate" className="text-right">
-                                            {parseFloat(data.interestRate).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Monthly Repayment Amount(Tsh):</strong>
-                                        <span id="monthlyRepayment" className="text-right">
-                                            {parseFloat(data.monthlyRepayment).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Total Repayment Amount(Tsh):</strong>
-                                        <span id="totalRepayment" className="text-right">
-                                            {parseFloat(data.totalRepayment).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                </div>
 
-                                {/* Upload Application Form */}
-                                <div>
+                            {/* Loan Details Section */}
+                            {data.loanType && (
+                                <section className="border-b border-gray-200 pb-4">
+                                    <h4 className="text-md font-semibold text-gray-700 mb-3">Loan Calculation Results</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Type:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {loanTypes.find(type => type.id === data.loanType)?.name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Amount:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.loanAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
+                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} Months</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.interestRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Interest Amount:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.interestAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Monthly Repayment:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.monthlyRepayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Total Repayment:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.totalRepayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>                                        
+                                    </div>                                    
+                                </section>
+                            )}
+
+                            {/* Application Form Display */}
+                            <section className="border-b border-gray-200 pb-4">
+                                <h4 className="text-md font-semibold text-gray-700 mb-3">Application Form</h4>
+                                {loan.application_form ? (
+                                    <div className="mt-2">
+                                        <a
+                                            href={`/storage/${loan.application_form}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-md font-semibold text-xs uppercase tracking-widest focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50 transition ease-in-out duration-150"
+                                        >
+                                            <FontAwesomeIcon icon={faEye} className="mr-2" />
+                                            View Application Form
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500">No application form available.</p>
+                                )}                                
+                            </section>   
+
+                            {data.loanType && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                                 
                                     {/* Upload Application Form */}
-                                    <div>
-                                        <label htmlFor="applicationForm" className="block text-sm font-medium text-gray-700">
-                                            Filled Application Form
-                                        </label>
-                                        <div className="mt-1 flex  flex-col items-start">
-
-                                            {/* Link to Existing File */}
-                                            {loan.application_form && (
-                                                <div className="mb-2">
-                                                    <a
-                                                        href={`/storage/${loan.application_form}`}  // Use template literal
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:text-blue-800 flex items-center"
-                                                    >
-                                                        View Current File
-                                                        <FontAwesomeIcon icon={faEye} className="ml-1" />
-                                                    </a>
-                                                </div>
-                                            )}
+                                    <div className="relative flex-1">                                        
+                                        <div className="mt-1 flex items-center">
                                             <label htmlFor="applicationForm" className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                                 <span>Upload</span>
                                                 <FontAwesomeIcon icon={faFileUpload} className="ml-2" />
@@ -603,44 +711,16 @@ export default function Edit({ loan, loanTypes }) {
                                                     onChange={handleApplicationFormChange}
                                                 />
                                             </label>
-                                             {applicationFormError && <p className="text-sm text-red-600 mt-1">{applicationFormError}</p>}
-
-                                            {/* Display Newly Selected Filename */}
                                             {data.applicationForm && (
                                                 <span className="ml-3 text-gray-500 text-sm">
                                                     {data.applicationForm.name}
                                                 </span>
                                             )}
-
-                                             {/* Display preview after selecting new File */}
-                                            {filePreviewUrl && (
-                                                <div className="mt-2">
-                                                    <img src={filePreviewUrl} alt="Application Form Preview" className="max-w-full h-auto rounded-md" />
-                                                </div>
-                                            )}
-
-                                            {errors.applicationForm && <p className="text-sm text-red-600 mt-1">{errors.applicationForm}</p>}
+                                            {applicationFormError && <p className="text-sm text-red-600 mt-1">{applicationFormError}</p>}
                                         </div>
-                                    </div>
-
-                                    {/* Stage */}
-                                    <div>
-                                        <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
-                                            Stage
-                                        </label>
-                                        <select
-                                            id="stage"
-                                            value={data.stage}
-                                            onChange={(e) => setData('stage', e.target.value)}
-                                            className={`mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.stage ? 'border-red-500' : ''}`}
-                                        >
-                                            <option value="1">Draft</option>                                           
-                                            <option value="2">Documentation</option> 
-                                        </select>
-                                        {errors.stage && <p className="text-sm text-red-600 mt-1">{errors.stage}</p>}
-                                    </div>
+                                    </div>                                                               
                                 </div>
-                            </div>
+                            )}                
 
                             {/* Submit Button */}
                             <div className="flex justify-end space-x-4 mt-6">
@@ -653,12 +733,22 @@ export default function Edit({ loan, loanTypes }) {
                                     <span>Cancel</span>
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="submit"                                   
                                     disabled={processing || isSaving}
                                     className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faSave} />
                                     <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleNext()} // Handle next action
+                                    disabled={processing || isNexting}
+                                    className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
+                                >
+                                    <FontAwesomeIcon icon={faSave} />
+                                    <span>{isNexting ? 'Nexting...' : 'Next'}</span>
                                 </button>
                             </div>
                         </form>

@@ -115,15 +115,15 @@ Route::middleware('auth')->group(function () {
 
      // Repayment routes
     Route::prefix('repaymentsavings0')->name('repaymentsavings0.')->group(function () {       
-        Route::get('/', [RepaymentSaving::class, 'repayment'])->name('repayment');
-        Route::post('/repayment', [RepaymentSaving::class, 'update'])->name('update');  
+        Route::get('/', [RepaymentSaving::class, 'repaymentIndex'])->name('repaymentIndex');
+        Route::post('/repayment{loan}', [RepaymentSaving::class, 'storeRepayment'])->name('pay');  
     });
 
     // Saving routes
     Route::prefix('repaymentsavings1')->name('repaymentsavings1.')->group(function () {       
-        Route::get('/', [RepaymentSaving::class, 'saving'])->name('saving');
-        Route::get('/customer/{customerId}', [RepaymentSaving::class, 'showCustomerSaving'])->name('customer');
-        Route::post('/saving', [RepaymentSaving::class, 'storeTransaction'])->name('update');        
+        Route::get('/', [RepaymentSaving::class, 'savingIndex'])->name('savingIndex');
+        Route::get('/customer/{customerId}', [RepaymentSaving::class, 'showCustomerSaving'])->name('customerSavings');
+        Route::post('/saving/{customerId}', [RepaymentSaving::class, 'storeTransaction'])->name('savings');        
     });
       
     // expenses routes

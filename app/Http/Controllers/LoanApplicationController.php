@@ -380,7 +380,7 @@ class LoanApplicationController extends Controller
     public function submit(Request $request, Loan $loan)
     {
 
-        Log::info('Start processing purchase update:', ['purchase' => $loan, 'request_data' => $request->all()]);
+        //Log::info('Start processing purchase update:', ['purchase' => $loan, 'request_data' => $request->all()]);
 
         // Validate request fields.
         $validator = Validator::make($request->all(), [
@@ -419,33 +419,57 @@ class LoanApplicationController extends Controller
      * customerLoans
      */  
 
-     public function customerLoans($customerId)
-     {
-         try {
-             $loan = Loan::where('customer_id', $customerId)->first();
-     
-             // Return a JSON response
-             if ($loan) {
-                $outstandingBalance = $this->calculateOutstandingBalance($loan);  // Call the balance calculation function (see below)
-                return response()->json(['loan' => $loan, 'outstandingBalance' => $outstandingBalance]); // Include balance in response
-            
-             } else {
-                 return response()->json(['loan' => null]); // Or an empty object {} if preferred
-             }           
-     
-     
-     
-         } catch (\Exception $e) {
-             \Log::error("Error in customerLoans:", ['error' => $e]);
-             return response()->json(['error' => 'Failed to fetch loan details.'], 500);
-         }
-     }
+    //  public function customerLoans($customerId)
+    //  {
+    //      try {
 
-     private function calculateOutstandingBalance(Loan $loan) {
-        // Implement your balance calculation logic HERE (server-side).
-        // This should match the frontend logic for consistency.
-        return $loan->total_repayment - $loan->payments->sum('amount'); // Example using Eloquent's sum()
+    //         $loan = Loan::with('payments') // Eager load payments
+    //         ->where('customer_id', $customerId)
+    //         ->first();
+     
+    //          // Return a JSON response
+    //          if ($loan) {
+    //             $outstandingBalance = $this->calculateOutstandingBalance($loan);  // Call the balance calculation function (see below)
+    //             return response()->json(['loan' => $loan, 'outstandingBalance' => $outstandingBalance]); // Include balance in response
+            
+    //          } else {
+    //              return response()->json(['loan' => null]); // Or an empty object {} if preferred
+    //          }   
+     
+    //      } catch (\Exception $e) {
+    //          \Log::error("Error in customerLoans:", ['error' => $e]);
+    //          return response()->json(['error' => 'Failed to fetch loan details.'], 500);
+    //      }
+    //  }
+
+    //  private function calculateOutstandingBalance(Loan $loan) {
+    //     // Implement your balance calculation logic HERE (server-side).
+    //     // This should match the frontend logic for consistency.
+    //     return $loan->total_repayment - $loan->payments->sum('amount'); // Example using Eloquent's sum()
+    // }
+
+    
+// ... other functions
+
+
+public function customerLoans($customerId)
+{
+    $loan = Loan::with('payments') // Eager load payments
+               ->where('customer_id', $customerId)
+               ->first();
+
+    if ($loan) {
+        return response()->json([
+            'loan' => $loan,
+            'disburse_date' => $loan->created_at,//$loan->disburse_date, // Assuming you have a disburse_date column on your Loan model            
+        ]);
+    } else {
+        return response()->json(['loan' => null]);
     }
+}
+
+
+
 
     
 }

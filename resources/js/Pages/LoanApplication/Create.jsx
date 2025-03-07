@@ -410,20 +410,46 @@ export default function Create({ loanTypes }) {
                                     )}
                                     {/* Display Customer Details After Selection */}
                                     {data.customer_id && (
-                                        <div className="mt-2">
-                                            <p className="text-sm font-medium text-gray-700">
-                                                {data.customer_type === 'company' ? 'Company Name:' : 'Name:'}
-                                                <span className="font-normal">
-                                                    {data.customer_type === 'company' ? data.company_name : `${data.first_name} ${data.surname}`}
-                                                </span>
-                                            </p>
-                                            <p className="text-sm font-medium text-gray-700">
-                                                Email: <span className="font-normal">{data.email}</span>
-                                            </p>
-                                            <p className="text-sm font-medium text-gray-700">
-                                                Phone: <span className="font-normal">{data.phone}</span>
-                                            </p>
-                                        </div>
+                                        <section className="border-b border-gray-200 pb-4">
+                                            <h4 className="text-md font-semibold text-gray-700 mb-3">Customer Information</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Customer Type:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.customer_type}</p>
+                                                </div>
+
+                                                {data.customer_type === 'individual' ? (
+                                                    <>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">First Name:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.first_name || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Other Names:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.other_names || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Surname:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.surname || 'N/A'}</p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700">Company Name:</label>
+                                                        <p className="mt-1 text-sm text-gray-500">{data.company_name || 'N/A'}</p>
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Email:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.email || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Phone:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.phone || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                        </section>
                                     )}
                                 </div>
                             </div>
@@ -472,55 +498,61 @@ export default function Create({ loanTypes }) {
                                         {errors.loanDuration && <p className="text-sm text-red-600">{errors.loanDuration}</p>}
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Application Form Upload and Calculation Results */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Dynamic Interest Calculation */}
-                                <div className="space-y-2">
-                                    <h5 className="text-lg font-semibold text-gray-700">Calculation Results</h5>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Interest Rate(%):</strong>
-                                        <span id="interestRate" className="text-right">
-                                            {parseFloat(data.interestRate).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Interest Amount(Tsh):</strong>
-                                        <span id="interestAmount" className="text-right">
-                                            {parseFloat(data.interestAmount).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Monthly Repayment Amount(Tsh):</strong>
-                                        <span id="monthlyRepayment" className="text-right">
-                                            {parseFloat(data.monthlyRepayment).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                    <p className="flex items-center justify-between">
-                                        <strong className="font-medium text-gray-700">Total Repayment Amount(Tsh):</strong>
-                                        <span id="totalRepayment" className="text-right">
-                                            {parseFloat(data.totalRepayment).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
-                                        </span>
-                                    </p>
-                                </div>
-
-                                {/* Upload Application Form */}
-                                <div>
+                            </div>                          
+                            
+                            {/* Loan Details Section */}
+                            {data.loanType && (
+                                <section className="border-b border-gray-200 pb-4">
+                                    <h4 className="text-md font-semibold text-gray-700 mb-3">Loan Calculation Results</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Type:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {loanTypes.find(type => type.id === data.loanType)?.name || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Amount:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.loanAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
+                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} Months</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.interestRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Interest Amount:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.interestAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Monthly Repayment:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.monthlyRepayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Total Repayment:</label>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                {parseFloat(data.totalRepayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                            </p>
+                                        </div>                                        
+                                    </div>                                    
+                                </section>
+                            )}
+                            
+                            {data.loanType && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                                 
                                     {/* Upload Application Form */}
-                                    <div>
+                                    <div className="relative flex-1">
                                         <label htmlFor="applicationForm" className="block text-sm font-medium text-gray-700">
                                             Filled Application Form
                                         </label>
@@ -543,26 +575,9 @@ export default function Create({ loanTypes }) {
                                             )}
                                             {errors.applicationForm && <p className="text-sm text-red-600 mt-1">{errors.applicationForm}</p>}
                                         </div>
-                                    </div>
-
-                                    {/* Stage */}
-                                    <div>
-                                        <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
-                                            Stage
-                                        </label>
-                                        <select
-                                            id="stage"
-                                            value={data.stage}
-                                            onChange={(e) => setData('stage', e.target.value)}
-                                            className={`mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.stage ? 'border-red-500' : ''}`}
-                                        >
-                                            <option value="1">Draft</option>                                           
-                                            <option value="2">Documentation</option>  
-                                        </select>
-                                        {errors.stage && <p className="text-sm text-red-600 mt-1">{errors.stage}</p>}
-                                    </div>
+                                    </div>                                                               
                                 </div>
-                            </div>
+                            )}
 
                             {/* Submit Button */}
                             <div className="flex justify-end space-x-4 mt-6">

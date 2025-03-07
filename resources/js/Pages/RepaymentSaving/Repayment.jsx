@@ -20,6 +20,7 @@ const debounce = (func, delay) => {
 
 export default function Repayment({ loanTypes , paymentTypes}) {
     const { data, setData, post, errors, processing, reset } = useForm({
+        loan_id: null,
         customer_type: 'individual',
         first_name: '',
         other_names: '',
@@ -38,6 +39,7 @@ export default function Repayment({ loanTypes , paymentTypes}) {
         stage: 1,
         applicationForm: null,
         amountToBePaid: '', // New state for the amount
+        payment_date: new Date().toISOString().slice(0, 10), // Initialize payment_date to today's date
     });
 
     const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -57,6 +59,14 @@ export default function Repayment({ loanTypes , paymentTypes}) {
     const [paymentTypesError, setPaymentTypesError] = useState(''); // State to display remarks error
     const [amountToBePaidError, setAmountToBePaidError] = useState('');
     const [amountToBePaid, setAmountToBePaid] = useState(''); // 
+
+    
+    const [totalPaid, setTotalPaid] = useState(0);  // State for total amount paid
+    const [remainingDebt, setRemainingDebt] = useState(0);  // State for remaining debt
+
+    const [overdueRepayments, setOverdueRepayments] = useState([]);
+
+
 
     
     const [modalState, setModalState] = useState({
@@ -154,6 +164,7 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                     setSelectedLoan(response.data.loan);
                      setData(prevData => ({
                           ...prevData,
+                          loan_id: response.data.loan.id,
                           loanType: response.data.loan.loan_type, // Access using response.data.loan.loan_type
                           loanAmount: response.data.loan.loan_amount, // Access other properties similarly
                           loanDuration: response.data.loan.loan_duration,
@@ -165,15 +176,26 @@ export default function Repayment({ loanTypes , paymentTypes}) {
 
                      }));
 
-                     // Calculate and set outstanding balance
-                    const outstandingBalance = calculateOutstandingBalance(response.data.loan); // Implement this function
-                    setData('outstandingBalance', outstandingBalance); // Add outstandingBalance to your form data
+                    //  // Calculate and set outstanding balance
+                    // const outstandingBalance = calculateOutstandingBalance(response.data.loan); // Implement this function
+                    // setData('outstandingBalance', outstandingBalance); // Add outstandingBalance to your form data
+
+                    // Calculate and set totalPaid and remainingDebt
+                    const { total_paid, remaining_debt } = calculateLoanDetails(response.data.loan); // Assuming you add this function (see below)
+                    setTotalPaid(total_paid);
+                    setRemainingDebt(remaining_debt);
+
+                    // Calculate overdue repayments
+                    const overdue = calculateOverdueRepayments(response.data.loan);
+                    setOverdueRepayments(overdue);
+
 
                 } else {
                     setSelectedLoan(null) // sets loan info
                     setData(prevData => ({
                         ...prevData,
-                        //Reset loan details in form
+                        //Reset loan details in form                        
+                        loan_id: null,
                         loan_type:'',
                         loan_amount: '',
                         loan_duration: '',
@@ -199,14 +221,94 @@ export default function Repayment({ loanTypes , paymentTypes}) {
         setShowCustomerDropdown(false);
     };
 
-    const calculateOutstandingBalance = (loan) => {
-        // Implement your logic to calculate the outstanding balance here.
-        // This will depend on your specific loan repayment rules and transaction history.
+    // const calculateOutstandingBalance = (loan) => {
+    //     // Implement your logic to calculate the outstanding balance here.
+    //     // This will depend on your specific loan repayment rules and transaction history.
 
-        // Example (very simplified - adjust based on your actual logic):
-        return loan.total_repayment - loan.payments.reduce((sum, payment) => sum + payment.amount, 0);
+    //     // Example (very simplified - adjust based on your actual logic):
+    //     return loan.total_repayment - loan.payments.reduce((sum, payment) => sum + payment.amount, 0);
 
+    // };
+
+    // Helper function to calculate total paid and remaining debt
+    const calculateLoanDetails = (loan) => {
+        console.log("Loan data in calculateLoanDetails:", loan);
+        console.log("Loan Payments:", loan.payments);
+    
+        let totalPaid = 0;
+        if (loan.payments && Array.isArray(loan.payments)) {
+            totalPaid = loan.payments.reduce((sum, payment) => {
+                console.log("Payment Amount:", payment.amount_paid); // Log the amount_paid
+                // Check if payment.amount_paid is a valid number before adding
+                const amountPaid = parseFloat(payment.amount_paid); // Convert amount_paid to number
+                if (!isNaN(amountPaid)) {
+                    return sum + amountPaid;
+                } else {
+                    console.error("Invalid payment amount:", payment.amount_paid); //Error
+                    return sum; // Skip invalid amount
+                }
+    
+            }, 0);
+    
+        }
+    
+        const remainingDebt = parseFloat(loan.total_repayment) - totalPaid; //Parse total_repayment
+        console.log("Total Paid:", totalPaid, "Remaining Debt:", remainingDebt);
+        return { total_paid: totalPaid, remaining_debt: remainingDebt };
     };
+
+    const calculateOverdueRepayments = (loan) => {
+        if (!loan || !loan.payments || !Array.isArray(loan.payments) || !loan.disburse_date ) { // Check if loan and payments are available and disburs_date
+            return []; // Or handle the case where the data is missing/invalid
+        }
+
+
+        const overdue = [];
+        let currentDate = new Date(loan.disburse_date); // Initialize with disburse date.
+        currentDate.setMonth(currentDate.getMonth() + 1)
+
+        loan.payments.forEach(payment => {
+
+            const expectedPaymentDate = new Date(currentDate);
+           
+
+            const actualPaymentDate = new Date(payment.payment_date);
+           
+
+            while(currentDate <= new Date()){ // Check if the current date is within the loan duration
+
+                if ( actualPaymentDate > expectedPaymentDate || payment.amount_paid < loan.monthly_repayment ) {
+
+                    overdue.push({
+                        expected_payment_date: formatDate(expectedPaymentDate), // Helper function to format date
+                        actual_payment_date: formatDate(actualPaymentDate), // Or null if not paid yet
+                        amount_due:  loan.monthly_repayment - payment.amount_paid , // Calculate amount overdue,
+                        // ... other payment details as needed
+                    });
+
+                }
+                //Increment current date by one month for next payment check
+                 currentDate.setMonth(currentDate.getMonth() + 1);  // Increment by one month
+
+                 // Break if payment date is within the loan duration but in future
+                if(expectedPaymentDate > new Date() ){
+                    break;
+                }
+
+            }
+        });
+
+        return overdue;
+    };
+
+    const formatDate = (date) => {
+        // Helper function to format date to your preferred format (e.g., YYYY-MM-DD)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
 
     const showAlert = (message) => {
         setModalState({
@@ -268,11 +370,12 @@ export default function Repayment({ loanTypes , paymentTypes}) {
             remarks: repaymentRemarks,
             payment_type_id: paymentType,
             amount: data.amountToBePaid, // Include the amount to be paid
+            payment_date: data.payment_date, // Add the payment date to the request data
         };
     
      
         // *** Replace this with your actual API call ***
-        axios.post(route('loan2.repayment', loan.id), repaymentData) // Assuming you create a new route
+        axios.post(route('repaymentsavings0.pay', data.loan_id), repaymentData) // Assuming you create a new route
             .then(response => {
                 console.log("Repayment successful:", response);
                 if (response.data && response.data.message) { // Check if message exists
@@ -280,7 +383,7 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                 }
  
                 if (response.status === 200) { // Check the status code for success
-                    Inertia.get(route('loan2.index')); // Navigate to procurements0.index
+                    Inertia.get(route('repaymentsavings0.repaymentIndex')); // Navigate to procurements0.index
                 } else {
                   console.error("Repayment failed (non-200 status):", response);
                   showAlert('Repayment failed. Please check the console for details.');
@@ -451,7 +554,35 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                                                         {parseFloat(data.totalRepayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
                                                     </p>
                                                 </div>
+
+                                                <div> {/* New for total paid */}
+                                                    <label className="block text-sm font-medium text-gray-700">Total Paid:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">
+                                                        {parseFloat(totalPaid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                                    </p>
+                                                </div>
+
+                                                <div> {/* New for remaining debt */}
+                                                    <label className="block text-sm font-medium text-gray-700">Remaining Debt:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">
+                                                        {parseFloat(remainingDebt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                                    </p>
+                                                </div>
                                             </div>
+
+                                            {overdueRepayments.length > 0 && ( // Conditionally render overdue repayments section
+                                                <div className="mt-4">
+                                                    <h5 className="text-lg font-semibold text-red-600">Overdue Repayments</h5>
+                                                    <ul>
+                                                        {overdueRepayments.map((repayment, index) => (
+                                                            <li key={index} className="text-red-500">
+                                                                {/* Display overdue repayment details */}
+                                                                <p>Expected: {repayment.expected_payment_date}, Actual: {repayment.actual_payment_date || 'Not paid'}, Amount Due: {repayment.amount_due}</p>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
                                         </section>
                                     )}
                                 </div>
@@ -509,7 +640,20 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                             )}
                         </strong>?
                     </p>
-                </div>                
+                </div>   
+
+                <div>
+                    <label htmlFor="payment_date" className="block text-sm font-medium text-gray-700 mt-4">Payment Date:</label>
+                    <input
+                        type="date" // Use a date input
+                        id="payment_date"
+                        name="payment_date"
+                        value={data.payment_date}
+                        onChange={e => setData('payment_date', e.target.value)} // Update payment_date in state
+                        className="mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        required
+                    />
+                </div>             
 
                 {/* New div for amount input */}
                 <div> 

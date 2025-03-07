@@ -1,8 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react'; 
+import { Head, useForm } from '@inertiajs/react'; 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faArrowDown, faArrowUp, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
@@ -28,15 +28,15 @@ export default function Saving({ paymentTypes }) {
         email: '',
         phone: '',
         customer_id: null,
-        amount: '', // State for deposit/withdrawal amount
+        amount: 0, // State for deposit/withdrawal amount
     });
 
-    const { selectedCustomer, savings } = usePage().props;
-    const [customerSearchQuery, setCustomerSearchQuery] = useState(selectedCustomer ? selectedCustomer.fullname : "");
+    const [customerSearchQuery, setCustomerSearchQuery] = useState('');
     const [customerSearchResults, setCustomerSearchResults] = useState([]);
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const customerDropdownRef = useRef(null);
     const customerSearchInputRef = useRef(null);
+
 
     const [savingModalOpen, setSavingModalOpen] = useState(false);
     const [savingRemarks, setSavingRemarks] = useState('');
@@ -118,27 +118,47 @@ export default function Saving({ paymentTypes }) {
         }));
     };
 
-    const selectCustomer = (customer) => {
-        Inertia.get(route('repaymentsavings1.customer', customer.id), {
-            preserveScroll: true,
-            onSuccess: (page) => {
-                setCustomerSearchQuery(page.props.selectedCustomer?.fullname);
-                setData((prevData) => ({
+    const selectCustomer = (selectedCustomer) => {
+        setData((prevData) => ({
+            ...prevData,
+            customer_type: selectedCustomer.customer_type,
+            first_name: selectedCustomer.first_name || '',
+            other_names: selectedCustomer.other_names || '',
+            surname: selectedCustomer.surname || '',
+            company_name: selectedCustomer.company_name || '',
+            email: selectedCustomer.email,
+            phone: selectedCustomer.phone || '',
+            customer_id: selectedCustomer.id,
+        }));
+
+        // Fetch loan details for the selected customer
+        axios.get(route('repaymentsavings1.customerSavings', selectedCustomer.id))
+        .then(response => {           
+            
+            // Check if savings exists and is an array
+            if (response.data.savings && Array.isArray(response.data.savings) && response.data.savings.length > 0) {
+                // Assuming savings is an array, access the first element
+                const savings = response.data.savings[0];
+    
+                setData(prevData => ({
                     ...prevData,
-                    customer_type: page.props.selectedCustomer?.customer_type,
-                    first_name: page.props.selectedCustomer?.first_name || '',
-                    other_names: page.props.selectedCustomer?.other_names || '',
-                    surname: page.props.selectedCustomer?.surname || '',
-                    company_name: page.props.selectedCustomer?.company_name || '',
-                    email: page.props.selectedCustomer?.email,
-                    phone: page.props.selectedCustomer?.phone || '',
-                    customer_id: page.props.selectedCustomer?.id,
+                    amount: savings.balance, // Access balance from the first savings object
                 }));
-            },
-            onError: (error) => {
-                console.error("Error selecting customer:", error);
+            } else {
+                setData(prevData => ({
+                    ...prevData,
+                    amount: 0, // Reset saving details in form
+                }));
+                // Optionally display a message if no savings are found.
+                // alert('No savings found for this customer.'); // Uncomment if needed
             }
+        })
+        .catch(error => {
+            console.error("Error fetching saving details:", error);
+            showAlert('Failed to fetch saving details. Please try again later.');
         });
+    
+    
 
         setCustomerSearchQuery('');
         setCustomerSearchResults([]);
@@ -196,14 +216,14 @@ export default function Saving({ paymentTypes }) {
             transaction_type: transactionType,
         };
 
-        axios.post(route('saving.transaction', selectedCustomer.id), savingData)
+        axios.post(route('repaymentsavings1.savings', data.customer_id), savingData)
             .then(response => {
                 if (response.data && response.data.message) {
                     showAlert(response.data.message);
                 }
 
                 if (response.status === 200) {
-                    Inertia.get(route('loan2.index'));
+                    Inertia.get(route('repaymentsavings1.savingIndex'));
                 } else {
                     console.error("Saving failed (non-200 status):", response);
                     showAlert('Saving transaction failed. Please check the console for details.');
@@ -251,10 +271,10 @@ export default function Saving({ paymentTypes }) {
                                         value={customerSearchQuery}
                                         onChange={handleCustomerSearchChange}
                                         onFocus={() => setShowCustomerDropdown(!!customerSearchQuery.trim())}
-                                        className="w-full border p-2 rounded text-sm pr-10"
+                                        className= "w-full border p-2 rounded text-sm pr-10"
                                         ref={customerSearchInputRef}
                                         autoComplete="off"
-                                    />
+                                    />                                  
                                     {customerSearchQuery && (
                                         <button
                                             type="button"
@@ -282,36 +302,75 @@ export default function Saving({ paymentTypes }) {
                                         </ul>
                                     )}
                                     
-                                    {selectedCustomer && (
+                                    {data.customer_id && (
                                         <section className="border-b border-gray-200 pb-4">
                                             <h4 className="text-md font-semibold text-gray-700 mb-3">Customer Information</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700">Customer Type:</label>
-                                                    <p className="mt-1 text-sm text-gray-500">{selectedCustomer.customer_type}</p>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.customer_type}</p>
                                                 </div>
+
+                                                {data.customer_type === 'individual' ? (
+                                                    <>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">First Name:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.first_name || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Other Names:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.other_names || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700">Surname:</label>
+                                                            <p className="mt-1 text-sm text-gray-500">{data.surname || 'N/A'}</p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700">Company Name:</label>
+                                                        <p className="mt-1 text-sm text-gray-500">{data.company_name || 'N/A'}</p>
+                                                    </div>
+                                                )}
+
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700">Email:</label>
-                                                    <p className="mt-1 text-sm text-gray-500">{selectedCustomer.email || 'N/A'}</p>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.email || 'N/A'}</p>
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700">Phone:</label>
-                                                    <p className="mt-1 text-sm text-gray-500">{selectedCustomer.phone || 'N/A'}</p>
+                                                    <p className="mt-1 text-sm text-gray-500">{data.phone || 'N/A'}</p>
                                                 </div>
                                             </div>
                                         </section>
                                     )}
+
+                                    {data.customer_id && ( // Only display savings details if savings data is available
+                                        <section className="border-b border-gray-200 pb-4 mt-8">
+                                            <h4 className="text-md font-semibold text-gray-700 mb-3">Savings Details</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700">Balance:</label>
+                                                    <p className="mt-1 text-sm text-gray-500">
+                                                        {parseFloat(data.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Tsh
+                                                    </p>
+                                                </div>
+                                                {/* Add other savings details as needed */}
+                                            </div>
+                                        </section>
+                                    )}
+                                        
                                 </div>
                             </div>
 
-                           {/* Submit Buttons */}
+                            {/* Submit Buttons */}
                             <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => handleSavingClick('deposit')}
                                     className="bg-green-500 hover:bg-green-700 text-white rounded px-4 py-2 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                                 >
-                                    <FontAwesomeIcon icon={faSave} />
+                                     <FontAwesomeIcon icon={faArrowDown} />
                                     <span>Deposit</span>
                                 </button>
                                 <button
@@ -319,7 +378,7 @@ export default function Saving({ paymentTypes }) {
                                     onClick={() => handleSavingClick('withdrawal')}
                                     className="bg-red-500 hover:bg-red-700 text-white rounded px-4 py-2 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
                                 >
-                                    <FontAwesomeIcon icon={faSave} />
+                                    <FontAwesomeIcon icon={faArrowUp} />
                                     <span>Withdrawal</span>
                                 </button>
                             </div>
@@ -346,8 +405,15 @@ export default function Saving({ paymentTypes }) {
             >
                 <div>
                     <p>
-                        Are you sure you want to {transactionType} the amount to <strong>{selectedCustomer?.fullname || 'the customer'}</strong>?
+                        Are you sure you want to <strong>{transactionType}</strong> the amount to <strong>
+                            {data.customer_type === 'individual' ? (
+                                `${data.first_name} ${data.other_names ? data.other_names + ' ' : ''}${data.surname}`
+                            ) : (
+                                data.company_name
+                            )}
+                        </strong>?
                     </p>
+
                 </div>
 
                 <div>
