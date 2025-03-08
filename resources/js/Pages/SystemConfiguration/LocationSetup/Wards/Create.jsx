@@ -36,7 +36,7 @@ export default function Create() {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        post(route('systemconfiguration3.wards.store'), {
+        post(route('systemconfiguration4.wards.store'), {
             onSuccess: () => { setIsSaving(false); resetForm(); },
             onError: () => { setIsSaving(false); showAlert('An error occurred while saving the ward.'); },
         });
@@ -44,7 +44,7 @@ export default function Create() {
 
     // Fetch ward groups
     useEffect(() => {
-        axios.get(route('systemconfiguration3.wardgroups.search'))
+        axios.get(route('systemconfiguration4.wardgroups.search'))
             .then(response => setWardGroups(response.data.groups))
             .catch(() => showAlert('Failed to fetch ward groups.'));
     }, []);
@@ -113,7 +113,7 @@ export default function Create() {
                             
                             {/* Buttons */}
                             <div className="flex justify-end space-x-4">
-                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration3.wards.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex wards-center space-x-2">
+                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration4.wards.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex wards-center space-x-2">
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
                                 </button>

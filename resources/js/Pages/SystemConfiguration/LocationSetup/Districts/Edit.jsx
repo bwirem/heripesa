@@ -39,7 +39,7 @@ export default function Edit({ district }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        put(route('systemconfiguration3.districts.update', district.id), {
+        put(route('systemconfiguration4.districts.update', district.id), {
             onSuccess: () => {
                 setIsSaving(false);
                 resetForm();
@@ -60,7 +60,7 @@ export default function Edit({ district }) {
     useEffect(() => {
         const fetchDistrictGroups = async () => {
             try {
-                const response = await axios.get(route('systemconfiguration3.districtgroups.search'));
+                const response = await axios.get(route('systemconfiguration4.districtgroups.search'));
                 setDistrictGroups(response.data.groups);
             } catch (error) {
                 console.error('Error fetching district groups:', error);
@@ -137,7 +137,7 @@ export default function Edit({ district }) {
                             <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => Inertia.get(route('systemconfiguration3.districts.index'))}
+                                    onClick={() => Inertia.get(route('systemconfiguration4.districts.index'))}
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex districts-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />

@@ -262,7 +262,7 @@ Route::middleware('auth')->group(function () {
     });
  
     // Routes for Location Setup (Version 3)
-    Route::prefix('systemconfiguration2')->name('systemconfiguration2.')->group(function () {
+    Route::prefix('systemconfiguration4')->name('systemconfiguration4.')->group(function () {
 
         // Main index route
         Route::get('/', function () {
@@ -326,7 +326,7 @@ Route::middleware('auth')->group(function () {
 
 
     // Routes for Facility Setup (Version 3)
-    Route::prefix('systemconfiguration3')->name('systemconfiguration3.')->group(function () {
+    Route::prefix('systemconfiguration5')->name('systemconfiguration5.')->group(function () {
 
         // Main index route
         Route::get('/', function () {

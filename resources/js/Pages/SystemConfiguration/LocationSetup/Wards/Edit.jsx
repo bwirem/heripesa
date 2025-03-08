@@ -39,7 +39,7 @@ export default function Edit({ ward }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        put(route('systemconfiguration3.wards.update', ward.id), {
+        put(route('systemconfiguration4.wards.update', ward.id), {
             onSuccess: () => {
                 setIsSaving(false);
                 resetForm();
@@ -60,7 +60,7 @@ export default function Edit({ ward }) {
     useEffect(() => {
         const fetchWardGroups = async () => {
             try {
-                const response = await axios.get(route('systemconfiguration3.wardgroups.search'));
+                const response = await axios.get(route('systemconfiguration4.wardgroups.search'));
                 setWardGroups(response.data.groups);
             } catch (error) {
                 console.error('Error fetching ward groups:', error);
@@ -137,7 +137,7 @@ export default function Edit({ ward }) {
                             <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => Inertia.get(route('systemconfiguration3.wards.index'))}
+                                    onClick={() => Inertia.get(route('systemconfiguration4.wards.index'))}
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex wards-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />

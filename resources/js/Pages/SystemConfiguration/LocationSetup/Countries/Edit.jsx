@@ -31,7 +31,7 @@ export default function Edit({ country }) {
         e.preventDefault();
 
         setIsSaving(true);
-        put(route('systemconfiguration3.countries.update', country.id), {
+        put(route('systemconfiguration4.countries.update', country.id), {
             onSuccess: () => {
                 setIsSaving(false);
                 resetForm();
@@ -79,7 +79,7 @@ export default function Edit({ country }) {
                             <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => Inertia.get(route('systemconfiguration3.countries.index'))}
+                                    onClick={() => Inertia.get(route('systemconfiguration4.countries.index'))}
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faBars, faTimes, faUser, faSignOutAlt, faHome, faShoppingCart, faPlusSquare, faMoneyBill,faClipboardList,
-    faMoneyBillAlt,faHistory, faBoxes, faFileInvoice, faCartPlus,
-    faBook, faChartBar, faFileAlt, faUsersCog, faCogs,
-    faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, faUserFriends, faCalculator, faFileContract
+    faMoneyBillAlt,faHistory, faBoxes, faFileInvoice, faCartPlus,    faBook, faChartBar, faFileAlt, faUsersCog,
+    faCogs,faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, faUserFriends, faCalculator, faFileContract, 
+    faUpload,faUserSlash, faMoneyCheckAlt, faCog, faUsers
 } from "@fortawesome/free-solid-svg-icons";
 import { faHistory as faSalesHistory } from '@fortawesome/free-solid-svg-icons';
 import { faFileInvoice as faloanSetupIcon } from '@fortawesome/free-solid-svg-icons';
@@ -44,7 +44,13 @@ const iconMap = {
     location_setup: faLocationSetupIcon,
     facility_setup: faBuilding,
     security_settings: faShieldAlt,
-    system_config: faCogs
+    system_config: faCogs,
+
+    person: faUser, // For Employee Bio Data
+    upload: faUpload, //For Import Employee Data
+    person_outline: faUserSlash, // For Termination  (assuming you add faUserSlash to your imports)
+    payroll: faMoneyCheckAlt, //  For Payroll (assuming you add faMoneyCheckAlt to imports)
+    settings: faCog, //Or faCogs for setup
 };
 
 // SidebarNavLink Component
@@ -111,6 +117,7 @@ export default function AuthenticatedLayout({ header, children }) {
         loan: false,
         repaymentsSavings: false,
         expenses: false,
+        humanresurces: false,
         accounting: false,
         reporting: false,
         systemConfig: false,
@@ -200,6 +207,29 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
         },
         {
+            label: 'Human Resource Management',
+            icon: faUsers, // More appropriate icon for HRM
+            isOpen: sidebarState.humanresurces,
+            toggleOpen: () => toggleSidebarSection('humanresurces'),
+            children: (
+                <>
+                    <SidebarNavLink href="/humanresurces0" icon={iconMap.person}> {/* Updated icon */}
+                        Employee Bio Data
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/humanresurces1" icon={iconMap.upload}> {/* Updated icon */}
+                        Import Employee Data
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/humanresurces2" icon={iconMap.person_outline}> {/* Updated icon */}
+                        Termination
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/humanresurces3" icon={iconMap.payroll}> {/* Updated icon */}
+                        Payroll
+                    </SidebarNavLink>
+                </>
+            ),
+        },
+
+        {
             label: 'Financial Accounting',
             icon: iconMap.financial_accounting,  // Use the distinct icon
             isOpen: sidebarState.accounting,
@@ -243,8 +273,14 @@ export default function AuthenticatedLayout({ header, children }) {
                 <>
                     <SidebarNavLink href="/systemconfiguration0" icon={iconMap.loan_setup}>Loan Setup</SidebarNavLink>
                     <SidebarNavLink href="/systemconfiguration1" icon={iconMap.expenses_setup}>Expenses Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration2" icon={iconMap.location_setup}>Location Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration3" icon={iconMap.facility_setup}>Facility Setup</SidebarNavLink>
+                    <SidebarNavLink href="/systemconfiguration2" icon={iconMap.manage_accounts}>  
+                        Human Resource Setup
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/systemconfiguration3" icon={iconMap.financial_accounting}>  
+                        Accounting Setup
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/systemconfiguration4" icon={iconMap.location_setup}>Location Setup</SidebarNavLink>
+                    <SidebarNavLink href="/systemconfiguration5" icon={iconMap.facility_setup}>Facility Setup</SidebarNavLink>
                 </>
             ),
         },

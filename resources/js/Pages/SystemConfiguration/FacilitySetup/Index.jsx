@@ -35,7 +35,7 @@ export default function Index() {
                                     <p className="text-gray-600">Facility Option</p>
                                     <h3 className="text-2xl font-bold">{itemGroupCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration4.facilityoptions.index')} className="text-purple-500 hover:underline">Manage Facility Option</a>
+                                        <a href={route('systemconfiguration5.facilityoptions.index')} className="text-purple-500 hover:underline">Manage Facility Option</a>
                                     </div>
                                 </div>
                             </div>

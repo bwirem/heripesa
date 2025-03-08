@@ -36,7 +36,7 @@ export default function Create() {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        post(route('systemconfiguration3.streets.store'), {
+        post(route('systemconfiguration4.streets.store'), {
             onSuccess: () => { setIsSaving(false); resetForm(); },
             onError: () => { setIsSaving(false); showAlert('An error occurred while saving the street.'); },
         });
@@ -44,7 +44,7 @@ export default function Create() {
 
     // Fetch street groups
     useEffect(() => {
-        axios.get(route('systemconfiguration3.streetgroups.search'))
+        axios.get(route('systemconfiguration4.streetgroups.search'))
             .then(response => setStreetGroups(response.data.groups))
             .catch(() => showAlert('Failed to fetch street groups.'));
     }, []);
@@ -113,7 +113,7 @@ export default function Create() {
                             
                             {/* Buttons */}
                             <div className="flex justify-end space-x-4">
-                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration3.streets.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex streets-center space-x-2">
+                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration4.streets.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex streets-center space-x-2">
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
                                 </button>

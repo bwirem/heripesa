@@ -39,7 +39,7 @@ export default function Edit({ street }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        put(route('systemconfiguration3.streets.update', street.id), {
+        put(route('systemconfiguration4.streets.update', street.id), {
             onSuccess: () => {
                 setIsSaving(false);
                 resetForm();
@@ -60,7 +60,7 @@ export default function Edit({ street }) {
     useEffect(() => {
         const fetchStreetGroups = async () => {
             try {
-                const response = await axios.get(route('systemconfiguration3.streetgroups.search'));
+                const response = await axios.get(route('systemconfiguration4.streetgroups.search'));
                 setStreetGroups(response.data.groups);
             } catch (error) {
                 console.error('Error fetching street groups:', error);
@@ -137,7 +137,7 @@ export default function Edit({ street }) {
                             <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => Inertia.get(route('systemconfiguration3.streets.index'))}
+                                    onClick={() => Inertia.get(route('systemconfiguration4.streets.index'))}
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex streets-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />

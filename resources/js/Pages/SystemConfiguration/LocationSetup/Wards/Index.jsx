@@ -21,7 +21,7 @@ export default function Index({ auth, wards, filters }) {
     });
 
     useEffect(() => {
-        get(route("systemconfiguration3.wards.index"), { preserveState: true });
+        get(route("systemconfiguration4.wards.index"), { preserveState: true });
     }, [data.search, data.stage, get]);
 
 
@@ -48,7 +48,7 @@ export default function Index({ auth, wards, filters }) {
 
     const handleModalConfirm = async () => {
         try {
-            await router.delete(route("systemconfiguration3.wards.destroy", modalState.wardToDeleteId));
+            await router.delete(route("systemconfiguration4.wards.destroy", modalState.wardToDeleteId));
         } catch (error) {
             console.error("Failed to delete ward:", error);
             showAlert("There was an error deleting the ward. Please try again.");
@@ -91,7 +91,7 @@ export default function Index({ auth, wards, filters }) {
 
 
                         <Link
-                            href={route("systemconfiguration3.wards.create")}
+                            href={route("systemconfiguration4.wards.create")}
                             className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm flex wards-center"
                         >
                             <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create
@@ -117,7 +117,7 @@ export default function Index({ auth, wards, filters }) {
                                                                       
                                         <td className="border-b p-3 flex space-x-2">
                                             <Link
-                                                href={route("systemconfiguration3.wards.edit", ward.id)}
+                                                href={route("systemconfiguration4.wards.edit", ward.id)}
                                                 className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex wards-center"
                                             >
                                                 <FontAwesomeIcon icon={faEdit} className="mr-1" />

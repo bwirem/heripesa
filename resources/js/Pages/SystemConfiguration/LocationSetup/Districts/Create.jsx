@@ -36,7 +36,7 @@ export default function Create() {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
-        post(route('systemconfiguration3.districts.store'), {
+        post(route('systemconfiguration4.districts.store'), {
             onSuccess: () => { setIsSaving(false); resetForm(); },
             onError: () => { setIsSaving(false); showAlert('An error occurred while saving the district.'); },
         });
@@ -44,7 +44,7 @@ export default function Create() {
 
     // Fetch district groups
     useEffect(() => {
-        axios.get(route('systemconfiguration3.districtgroups.search'))
+        axios.get(route('systemconfiguration4.districtgroups.search'))
             .then(response => setDistrictGroups(response.data.groups))
             .catch(() => showAlert('Failed to fetch district groups.'));
     }, []);
@@ -113,7 +113,7 @@ export default function Create() {
                             
                             {/* Buttons */}
                             <div className="flex justify-end space-x-4">
-                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration3.districts.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex districts-center space-x-2">
+                                <button type="button" onClick={() => Inertia.get(route('systemconfiguration4.districts.index'))} className="bg-gray-300 text-gray-700 rounded p-2 flex districts-center space-x-2">
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
                                 </button>
