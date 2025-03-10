@@ -31,6 +31,7 @@ use App\Http\Controllers\LOCWardController;
 use App\Http\Controllers\LOCStreetController;
 
 use App\Http\Controllers\FacilityOptionController;
+use App\Http\Controllers\ChartOfAccountController;
 
 use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\UserController;
@@ -258,6 +259,27 @@ Route::middleware('auth')->group(function () {
             Route::get('/search', [SEXPItemController::class, 'search'])->name('search'); 
         });
         
+
+    });
+
+    // Routes for Account Setup (Version 3)
+    Route::prefix('systemconfiguration3')->name('systemconfiguration3.')->group(function () {
+
+        // Main index route
+        Route::get('/', function () {
+            return Inertia::render('SystemConfiguration/AccountSetup/Index');
+        })->name('index'); // Added a proper route name for the index.
+
+         // --- chartofaccount Routes ---
+         Route::prefix('chartofaccounts')->name('chartofaccounts.')->group(function () {
+            Route::get('/', [ChartOfAccountController::class, 'index'])->name('index');
+            Route::get('/create', [ChartOfAccountController::class, 'create'])->name('create');
+            Route::post('/', [ChartOfAccountController::class, 'store'])->name('store');
+            Route::get('/{chartofaccount}/edit', [ChartOfAccountController::class, 'edit'])->name('edit');
+            Route::put('/{chartofaccount}', [ChartOfAccountController::class, 'update'])->name('update'); 
+            Route::delete('/{chartofaccount}', [ChartOfAccountController::class, 'destroy'])->name('destroy');
+            Route::get('/search', [ChartOfAccountController::class, 'search'])->name('search');
+        });   
 
     });
  

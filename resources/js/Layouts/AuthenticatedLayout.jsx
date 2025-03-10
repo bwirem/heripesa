@@ -207,7 +207,7 @@ export default function AuthenticatedLayout({ header, children }) {
             ),
         },
         {
-            label: 'Human Resource Management',
+            label: 'Human Resource',
             icon: faUsers, // More appropriate icon for HRM
             isOpen: sidebarState.humanresurces,
             toggleOpen: () => toggleSidebarSection('humanresurces'),
