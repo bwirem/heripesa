@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\User
-;
+use App\Models\User;
+use App\Models\UserGroup;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -33,7 +35,10 @@ class UserController extends Controller
      */
     public function create()
     {
-        return inertia('UserManagement/Users/Create');
+        return inertia('UserManagement/Users/Create', [         
+            'userGroups' => UserGroup::all(),
+        ]);
+        
     }
 
     /**
@@ -43,16 +48,21 @@ class UserController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255',            
-            'usergroup_id' => 'nullable|exists:sexp_usergroups,id',
+            'name' => 'required|string|max:255', 
+            'email' => 'required|string|email|unique:users,email', // Ensure email uniqueness
+            'password' => 'required|string|min:8',         
+            'usergroup_id' => 'required|exists:usergroups,id',
         ]);
 
-        // Create the user
+        // Hash the password and create the user
+        $validated['password'] = Hash::make($validated['password']); // Hash the password
+
         User::create($validated);
 
         return redirect()->route('usermanagement.users.index')
             ->with('success', 'User created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified user.
@@ -61,6 +71,7 @@ class UserController extends Controller
     {
         return inertia('UserManagement/Users/Edit', [
             'user' => $user,
+            'userGroups' => UserGroup::all(),
         ]);
     }
 
@@ -71,8 +82,9 @@ class UserController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255',            
-            'usergroup_id' => 'nullable|exists:sexp_usergroups,id',
+            'name' => 'required|string|max:255',  
+            'email' => 'required|string|email',      
+            'usergroup_id' => 'required|exists:usergroups,id',
         ]);
 
         // Update the user
@@ -81,6 +93,31 @@ class UserController extends Controller
         return redirect()->route('usermanagement.users.index')
             ->with('success', 'User updated successfully.');
     }
+
+    /**
+     * Show the form for resetting the password of the specified user.
+     */
+    public function resetPassword(Request $request, User $user)
+    {
+        // Validate input
+        $validated = $request->validate([
+            'password' => 'required|string|min:8',
+        ]);
+
+        // Hash the password
+        $validated['password'] = Hash::make($validated['password']);
+
+        Log::info('Start processing purchase update:', ['user' => $user, 'request_data' => $request->all()]);
+
+        // Update the user
+        $user->update($validated);
+
+        // Return a success response in JSON format
+        return response()->json([
+            'message' => 'Password reset successfully.',
+        ], 200);
+    }
+
 
     /**
      * Remove the specified user from storage.

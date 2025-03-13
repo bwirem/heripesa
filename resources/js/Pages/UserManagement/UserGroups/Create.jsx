@@ -55,9 +55,9 @@ export default function Create() {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">New Group</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">New Role</h2>}
         >
-            <Head title="New Group" />
+            <Head title="New Role" />
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="bg-white p-6 shadow sm:rounded-lg">

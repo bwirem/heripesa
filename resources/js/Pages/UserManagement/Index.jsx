@@ -74,7 +74,7 @@ export default function SecuritySettings() { // Component name changed to Securi
                                     <p className="text-gray-600">Permission Management</p>
                                     <h3 className="text-2xl font-bold">{permissionCount}</h3>
                                     <div className="mt-2">
-                                        <a href="/permission-management" className="text-green-500 hover:underline">Manage Permissions</a>
+                                        <a href={route('usermanagement.userpermission.index')} className="text-purple-500 hover:underline">Manage Permissions</a>
                                     </div>
                                 </div>
                             </div>

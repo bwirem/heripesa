@@ -34,6 +34,7 @@ use App\Http\Controllers\FacilityOptionController;
 use App\Http\Controllers\ChartOfAccountController;
 
 use App\Http\Controllers\UserGroupController;
+use App\Http\Controllers\UserPermissionController;
 use App\Http\Controllers\UserController;
 
 
@@ -385,16 +386,24 @@ Route::middleware('auth')->group(function () {
             Route::get('/{usergroup}/edit', [UserGroupController::class, 'edit'])->name('edit');
             Route::put('/{usergroup}', [UserGroupController::class, 'update'])->name('update'); 
             Route::delete('/{usergroup}', [UserGroupController::class, 'destroy'])->name('destroy');
+            Route::get('/search', [UserGroupController::class, 'search'])->name('search');
         });   
 
          // --- user Routes ---
-         Route::prefix('users')->name('users.')->group(function () {
+        Route::prefix('users')->name('users.')->group(function () {
             Route::get('/', [UserController::class, 'index'])->name('index');
             Route::get('/create', [UserController::class, 'create'])->name('create');
             Route::post('/', [UserController::class, 'store'])->name('store');
             Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
-            Route::put('/{user}', [UserController::class, 'update'])->name('update'); 
+            Route::put('/{user}', [UserController::class, 'update'])->name('update');           
+            Route::post('/{user}/resetPassword', [UserController::class, 'resetPassword'])->name('resetPassword');
             Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+
+        });  
+        
+        // --- UserPermission Routes ---
+        Route::prefix('userpermission')->name('userpermission.')->group(function () {
+            Route::get('/', [UserPermissionController::class, 'index'])->name('index');   
         });   
 
     });

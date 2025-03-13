@@ -51,9 +51,9 @@ export default function Edit({ usergroup }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Edit Group</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Edit Role</h2>}
         >
-            <Head title="Edit Group" />
+            <Head title="Edit Role" />
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="bg-white p-6 shadow sm:rounded-lg">
