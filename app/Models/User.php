@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -18,7 +19,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'usergroup_id',
+        'facilitybranch_id',
+        'usergroup_id',        
         'name',
         'email',
         'password',
@@ -50,5 +52,20 @@ class User extends Authenticatable
     public function loanApprovals()
     {
         return $this->hasMany(LoanApproval::class, 'approved_by');
+    }
+
+    /**
+     * The facility branches that belong to the user.
+     */
+   
+     public function facilityBranches(): BelongsToMany  
+     {
+        return $this->belongsToMany(FacilityBranch::class, 'facilitybranch_user', 'user_id', 'facilitybranch_id');
+     }
+
+
+    public function userGroup()
+    {
+        return $this->belongsTo(UserGroup::class);
     }
 }

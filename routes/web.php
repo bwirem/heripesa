@@ -31,6 +31,8 @@ use App\Http\Controllers\LOCWardController;
 use App\Http\Controllers\LOCStreetController;
 
 use App\Http\Controllers\FacilityOptionController;
+use App\Http\Controllers\FacilityBranchController;
+
 use App\Http\Controllers\ChartOfAccountController;
 
 use App\Http\Controllers\UserGroupController;
@@ -58,6 +60,39 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+     
+     // --- customers Routes ---
+     Route::prefix('customer0')->name('customer0.')->group(function () {
+        Route::get('/', [BLSCustomerController::class, 'index'])->name('index'); 
+        Route::get('/create', [BLSCustomerController::class, 'create'])->name('create'); 
+        Route::post('/', [BLSCustomerController::class, 'store'])->name('store'); 
+        Route::post('/directstore', [BLSCustomerController::class, 'directstore'])->name('directstore');
+        Route::get('/{customer}/edit', [BLSCustomerController::class, 'edit'])->name('edit'); 
+        Route::put('/{customer}', [BLSCustomerController::class, 'update'])->name('update');
+        Route::get('/search', [BLSCustomerController::class, 'search'])->name('search'); 
+    });
+
+    // --- guarantors Routes ---
+    Route::prefix('customer1')->name('customer1.')->group(function () {
+        Route::get('/', [BLSGuarantorController::class, 'index'])->name('index'); 
+        Route::get('/create', [BLSGuarantorController::class, 'create'])->name('create'); 
+        Route::post('/', [BLSGuarantorController::class, 'store'])->name('store'); 
+        Route::post('/directstore', [BLSGuarantorController::class, 'directstore'])->name('directstore');
+        Route::get('/{guarantor}/edit', [BLSGuarantorController::class, 'edit'])->name('edit'); 
+        Route::put('/{guarantor}', [BLSGuarantorController::class, 'update'])->name('update');
+        Route::get('/search', [BLSGuarantorController::class, 'search'])->name('search'); 
+    });
+
+    // --- guarantors Routes ---
+    Route::prefix('customer2')->name('customer2.')->group(function () {
+        Route::get('/', [BLSGuarantorController::class, 'index'])->name('index'); 
+        Route::get('/create', [BLSGuarantorController::class, 'create'])->name('create'); 
+        Route::post('/', [BLSGuarantorController::class, 'store'])->name('store'); 
+        Route::post('/directstore', [BLSGuarantorController::class, 'directstore'])->name('directstore');
+        Route::get('/{guarantor}/edit', [BLSGuarantorController::class, 'edit'])->name('edit'); 
+        Route::put('/{guarantor}', [BLSGuarantorController::class, 'update'])->name('update');
+        Route::get('/search', [BLSGuarantorController::class, 'search'])->name('search'); 
+    });
 
     // Order routes
     Route::prefix('loan0')->name('loan0.')->group(function () {
@@ -136,12 +171,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{post}/edit', [ExpPostController::class, 'edit'])->name('edit');
         Route::put('/{post}', [ExpPostController::class, 'update'])->name('update');
         Route::delete('/{post}', [ExpPostController::class, 'destroy'])->name('destroy');
-    });
-
-       
-   
-
-    
+    });         
     
     // Routes for loan Setup (Version 3)
     Route::prefix('systemconfiguration0')->name('systemconfiguration0.')->group(function () {
@@ -367,6 +397,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/search', [FacilityOptionController::class, 'search'])->name('search');
         });   
 
+        // --- facilitybranch Routes ---
+        Route::prefix('facilitybranches')->name('facilitybranches.')->group(function () {
+            Route::get('/', [FacilityBranchController::class, 'index'])->name('index');
+            Route::get('/create', [FacilityBranchController::class, 'create'])->name('create');
+            Route::post('/', [FacilityBranchController::class, 'store'])->name('store');
+            Route::get('/{facilitybranch}/edit', [FacilityBranchController::class, 'edit'])->name('edit');
+            Route::put('/{facilitybranch}', [FacilityBranchController::class, 'update'])->name('update'); 
+            Route::delete('/{facilitybranch}', [FacilityBranchController::class, 'destroy'])->name('destroy');
+            Route::get('/search', [FacilityBranchController::class, 'search'])->name('search');
+        });   
+
     });
 
 
@@ -403,7 +444,9 @@ Route::middleware('auth')->group(function () {
         
         // --- UserPermission Routes ---
         Route::prefix('userpermission')->name('userpermission.')->group(function () {
-            Route::get('/', [UserPermissionController::class, 'index'])->name('index');   
+            Route::get('/', [UserPermissionController::class, 'index'])->name('index');         
+            Route::get('/{userGroup}/permissions', [UserPermissionController::class, 'getPermissions'])->name('getPermissions');
+            Route::post('/{userGroup}/permissions', [UserPermissionController::class, 'storePermissions'])->name('storePermissions');
         });   
 
     });

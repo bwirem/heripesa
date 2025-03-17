@@ -48,10 +48,10 @@ export default function Index() {
                                     <FontAwesomeIcon icon={faListAlt} className="text-white" aria-label="Expense Items" />
                                 </div>
                                 <div className="ml-4">
-                                    <p className="text-gray-600">Other Option</p>
+                                    <p className="text-gray-600">Facility Branches</p>
                                     <h3 className="text-2xl font-bold">{expenseItemCount}</h3>
                                     <div className="mt-2">
-                                        <a href="/addorlistexpense/view" className="text-green-500 hover:underline">Other Option</a>
+                                        <a href={route('systemconfiguration5.facilitybranches.index')} className="text-purple-500 hover:underline">Manage Facility Branches</a>
                                     </div>
                                 </div>
                             </div>

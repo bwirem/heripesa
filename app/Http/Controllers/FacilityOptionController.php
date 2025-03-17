@@ -51,7 +51,7 @@ class FacilityOptionController extends Controller
             'name' => $validated['name'],            
         ]);
 
-        return redirect()->route('systemconfiguration4.facilityoptions.index')
+        return redirect()->route('systemconfiguration5.facilityoptions.index')
             ->with('success', 'Facilityoption created successfully.');
     }
 
@@ -80,7 +80,7 @@ class FacilityOptionController extends Controller
             'name' => $validated['name'],            
         ]);
 
-        return redirect()->route('systemconfiguration4.facilityoptions.index')
+        return redirect()->route('systemconfiguration5.facilityoptions.index')
             ->with('success', 'Facilityoption updated successfully.');
     }
 
@@ -91,7 +91,7 @@ class FacilityOptionController extends Controller
     {
         $facilityoption->delete();
 
-        return redirect()->route('systemconfiguration4.facilityoptions.index')
+        return redirect()->route('systemconfiguration5.facilityoptions.index')
             ->with('success', 'Facilityoption deleted successfully.');
     }
 

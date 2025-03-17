@@ -1,107 +1,97 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faTimesCircle, faLock } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import Modal from '@/Components/CustomModal';
+import axios from 'axios';
 
-export default function Edit({ user, userGroups }) {
-    const { data, setData, put, errors, processing, reset } = useForm({
+
+export default function Edit({ user, userGroups, facilityBranches,assignedBranchIds }) {
+    const { data, setData, put, errors, processing } = useForm({
         name: user.name,
         email: user.email,
-        resetpassword: false,
         usergroup_id: user.usergroup_id,
+        facilitybranch_id: user.facilitybranch_id,
+        selectedBranches: assignedBranchIds || [], // Set assigned branches initially
     });
 
-    const [modalState, setModalState] = useState({
-        isOpen: false,
-        message: '',
-        isAlert: false,
-    });
+    const [modalState, setModalState] = useState({ isOpen: false, message: '', isAlert: false });
     const [isSaving, setIsSaving] = useState(false);
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const [remarksError, setRemarksError] = useState('');
 
-    const handleModalClose = () => {
-        setModalState({ isOpen: false, message: '', isAlert: false });
-    };
+    useEffect(() => {
+        if (user && user.facilityBranches) {
+            setData('selectedBranches', user.facilityBranches.map(branch => branch.id));
+        }
+    }, [user]);
 
-    const handleModalConfirm = () => {  
-        setModalState({ isOpen: false, message: '', isAlert: false }); 
-    };
+    useEffect(() => {
+        if (user?.facilityBranches) {
+            setSelectedBranches(user.facilityBranches.map(branch => branch.id));
+            setData('selectedBranches', user.facilityBranches.map(branch => branch.id));
+        }
+    }, [user]);
 
-    const showAlert = (message) => {
-        setModalState({ isOpen: true, message, isAlert: true });
-    };
+    const handleModalClose = () => setModalState({ isOpen: false, message: '', isAlert: false });
+    const handleModalConfirm = () => { setModalState({ isOpen: false, message: '', isAlert: false }); };
+    const showAlert = (message) => setModalState({ isOpen: true, message, isAlert: true });
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSaving(true);
+
         put(route('usermanagement.users.update', user.id), {
+            ...data,
             onSuccess: () => {
                 setIsSaving(false);
-                resetForm();
+                showAlert('User updated successfully!');
             },
-            onError: (errors) => {
-                console.error(errors);
+            onError: () => {
                 setIsSaving(false);
                 showAlert('An error occurred while saving the user.');
             },
         });
     };
 
-    const resetForm = () => {
-        reset();
-        showAlert('User updated successfully!');
+    
+    useEffect(() => {
+        setData('selectedBranches', assignedBranchIds);
+    }, [assignedBranchIds]);
+
+    const handleBranchChange = (branchId) => {
+        setData('selectedBranches', data.selectedBranches.includes(branchId)
+            ? data.selectedBranches.filter(id => id !== branchId)
+            : [...data.selectedBranches, branchId]
+        );
     };
 
     const handleResetPassword = () => {
-        // Check if the new password is valid
         if (newPassword.length < 8) {
             setRemarksError('Password must be at least 8 characters long.');
             return;
         }
-    
-        const resetPasswordData = {
-            password: newPassword,
-        };    
-        
-        // API call to reset password
-        axios.post(route('usermanagement.users.resetPassword', user.id), resetPasswordData) // Adjust the route as necessary
-            .then(response => {              
-    
-                // Show message from backend or default success message
-                if (response.data && response.data.message) {
-                    showAlert(response.data.message);
-                } else {
-                    showAlert('Password reset successfully!'); // Default success message
-                }
-    
-                // Check for successful status
+
+        axios.post(route('usermanagement.users.resetPassword', user.id), { password: newPassword })
+            .then(response => {
+                showAlert(response.data.message || 'Password reset successfully!');
                 if (response.status === 200) {
-                    setResetPasswordModalOpen(false); // Close modal on success
-                    setNewPassword(''); // Clear the password input after confirming
-                    setRemarksError(''); // Clear error after confirming
+                    setResetPasswordModalOpen(false);
+                    setNewPassword('');
+                    setRemarksError('');
                 }
             })
             .catch(error => {
-               
-                if (error.response) {
-                      
-                    let errorMessage = 'Failed to reset password. Please try again.';
-                    if (error.response.data && error.response.data.message) {
-                        errorMessage = error.response.data.message; // Use the backend error message, if available
-                    }
-                    showAlert(errorMessage); // Show more specific error
-                } else {
-                    showAlert('Failed to reset password. Please check your network connection.'); // Generic error message for network issues
-                }
+                showAlert(error.response?.data?.message || 'Failed to reset password. Please try again.');
+
             });
     };
-    
+
 
     return (
         <AuthenticatedLayout
@@ -138,8 +128,23 @@ export default function Edit({ user, userGroups }) {
                                 </div>
                             </div>
 
-                            {/* Role */}
+                            {/* Branch and Role */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Branch</label>
+                                    <select
+                                        value={data.facilitybranch_id}
+                                        onChange={(e) => setData('facilitybranch_id', e.target.value)}
+                                        className={`w-full border p-2 rounded text-sm ${errors.facilitybranch_id ? 'border-red-500' : ''}`}
+                                    >
+                                        <option value="">Select Branch</option>
+                                        {Array.isArray(facilityBranches) && facilityBranches.map(branch => (
+                                            <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                        ))}
+                                    </select>
+                                    {errors.facilitybranch_id && <p className="text-sm text-red-600">{errors.facilitybranch_id}</p>}
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Role</label>
                                     <select
@@ -148,12 +153,50 @@ export default function Edit({ user, userGroups }) {
                                         className={`w-full border p-2 rounded text-sm ${errors.usergroup_id ? 'border-red-500' : ''}`}
                                     >
                                         <option value="">Select Role</option>
-                                        {userGroups.map(group => (
+                                        {Array.isArray(userGroups) && userGroups.map(group => (
                                             <option key={group.id} value={group.id}>{group.name}</option>
                                         ))}
                                     </select>
                                     {errors.usergroup_id && <p className="text-sm text-red-600">{errors.usergroup_id}</p>}
                                 </div>
+                            </div>
+
+                            {/* FacilityBranches Table */}
+                            <div className="flex-1 overflow-x-auto mt-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Branches</label>
+                                <table className="min-w-full border border-gray-300 shadow-md rounded">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="border-b p-3 text-center font-medium text-gray-700"></th>
+                                            <th className="border-b p-3 text-center font-medium text-gray-700">Branches</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {facilityBranches && facilityBranches.length > 0 ? (
+                                            facilityBranches.map(branch => (
+                                                <tr key={branch.id} className={branch.id % 2 === 0 ? 'bg-gray-50' : ''}>
+                                                    <td className="border-b p-3 text-gray-700 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.selectedBranches.includes(branch.id)}
+                                                            onChange={() => handleBranchChange(branch.id)}
+                                                        />                                                       
+                                                    </td>
+                                                    <td className="border-b p-3 text-gray-700">{branch.name}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="2" className="border-b p-3 text-center text-gray-700">No branches found.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Role */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                                 <div className="flex items-center">
                                     <button
                                         type="button"
@@ -182,7 +225,7 @@ export default function Edit({ user, userGroups }) {
                                     className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faSave} />
-                                    <span>{isSaving ? 'Saving...' : 'Save User'}</span>
+                                    <span>{isSaving ? 'Saving...' : 'Save'}</span>
                                 </button>
                             </div>
                         </form>
@@ -225,7 +268,7 @@ export default function Edit({ user, userGroups }) {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
-                onConfirm={handleModalConfirm}   
+                onConfirm={handleModalConfirm}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

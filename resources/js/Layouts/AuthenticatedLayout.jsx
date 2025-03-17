@@ -3,16 +3,17 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faBars, faTimes, faUser, faSignOutAlt, faHome, faShoppingCart, faPlusSquare, faMoneyBill,faClipboardList,
-    faMoneyBillAlt,faHistory, faBoxes, faFileInvoice, faCartPlus,    faBook, faChartBar, faFileAlt, faUsersCog,
-    faCogs,faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, faUserFriends, faCalculator, faFileContract, 
-    faUpload,faUserSlash, faMoneyCheckAlt, faCog, faUsers
+    faBars, faTimes, faUser, faSignOutAlt, faHome, faShoppingCart, faPlusSquare, faMoneyBill, faClipboardList,
+    faMoneyBillAlt, faHistory, faBoxes, faFileInvoice, faCartPlus, faBook, faChartBar, faFileAlt, faUsersCog,
+    faCogs, faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, faUserFriends, faCalculator, faFileContract,
+    faUpload, faUserSlash, faMoneyCheckAlt, faCog, faUsers, faUserPlus, faHandHoldingUsd // ADDED HERE
 } from "@fortawesome/free-solid-svg-icons";
 import { faHistory as faSalesHistory } from '@fortawesome/free-solid-svg-icons';
 import { faFileInvoice as faloanSetupIcon } from '@fortawesome/free-solid-svg-icons';
 import { faMoneyBillWave as faExpensesSetupIcon } from '@fortawesome/free-solid-svg-icons';
 import { faMapMarkerAlt as faLocationSetupIcon } from '@fortawesome/free-solid-svg-icons';
 import "@fortawesome/fontawesome-svg-core/styles.css";
+
 
 // Constants for CSS classes
 const navLinkClasses = 'flex items-center p-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md';
@@ -21,10 +22,10 @@ const caretClasses = (isOpen) => `caret ${isOpen ? 'rotate-180' : ''}`;
 // Optimized Icon Map (using only icons actively referenced and differentiating similar features)
 const iconMap = {
     home: faHome,
-    add_shopping_cart: faShoppingCart,
+    add_shopping_cart: faShoppingCart, // Removed the duplicate add_shopping_cart
     post_add: faPlusSquare,
     paid: faMoneyBill,
-    loan_reconciliation: faClipboardList, 
+    loan_reconciliation: faClipboardList,
     sales_history: faSalesHistory,
     attach_money: faMoneyBillAlt,
     history: faHistory,
@@ -51,6 +52,8 @@ const iconMap = {
     person_outline: faUserSlash, // For Termination  (assuming you add faUserSlash to your imports)
     payroll: faMoneyCheckAlt, //  For Payroll (assuming you add faMoneyCheckAlt to imports)
     settings: faCog, //Or faCogs for setup
+    customer: faUserPlus, // New: Icon for Customer Management (Adding User)
+    loan: faHandHoldingUsd  //New: Icon for Loan Management (Hand holding money)
 };
 
 // SidebarNavLink Component
@@ -114,6 +117,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth >= 640);
     const [sidebarState, setSidebarState] = useState({
+        customer: false,
         loan: false,
         repaymentsSavings: false,
         expenses: false,
@@ -147,8 +151,27 @@ export default function AuthenticatedLayout({ header, children }) {
             href: '/dashboard',
         },
         {
+            label: 'Customers',
+            icon: iconMap.customer,  // Using the new customer icon
+            isOpen: sidebarState.customer,
+            toggleOpen: () => toggleSidebarSection('customer'),
+            children: (
+                <>
+                    <SidebarNavLink href="/customer0" icon={iconMap.add_shopping_cart}>
+                        Registration
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/customer1" icon={iconMap.post_add}>
+                        Customer Members
+                    </SidebarNavLink>
+                    <SidebarNavLink href="/customer2" icon={iconMap.paid}>
+                        Guarantors
+                    </SidebarNavLink>
+                </>
+            ),
+        },
+        {
             label: 'Loan Management',
-            icon: iconMap.add_shopping_cart,
+            icon: iconMap.loan, // Using the new loan icon
             isOpen: sidebarState.loan,
             toggleOpen: () => toggleSidebarSection('loan'),
             children: (
@@ -273,10 +296,10 @@ export default function AuthenticatedLayout({ header, children }) {
                 <>
                     <SidebarNavLink href="/systemconfiguration0" icon={iconMap.loan_setup}>Loan Setup</SidebarNavLink>
                     <SidebarNavLink href="/systemconfiguration1" icon={iconMap.expenses_setup}>Expenses Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration2" icon={iconMap.manage_accounts}>  
+                    <SidebarNavLink href="/systemconfiguration2" icon={iconMap.manage_accounts}>
                         Human Resource Setup
                     </SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration3" icon={iconMap.financial_accounting}>  
+                    <SidebarNavLink href="/systemconfiguration3" icon={iconMap.financial_accounting}>
                         Accounting Setup
                     </SidebarNavLink>
                     <SidebarNavLink href="/systemconfiguration4" icon={iconMap.location_setup}>Location Setup</SidebarNavLink>
@@ -443,8 +466,8 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="p-4 h-full">
                         {children}
                     </div>
-                </main>        
-                
+                </main>
+
             </div>
         </div>
     );

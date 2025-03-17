@@ -3,9 +3,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Models\FacilityBranch;
+
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -37,6 +40,7 @@ class UserController extends Controller
     {
         return inertia('UserManagement/Users/Create', [         
             'userGroups' => UserGroup::all(),
+            'facilityBranches' => FacilityBranch::all(),
         ]);
         
     }
@@ -46,32 +50,46 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255', 
-            'email' => 'required|string|email|unique:users,email', // Ensure email uniqueness
-            'password' => 'required|string|min:8',         
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|unique:users,email',
+            'password' => 'required|string|min:8',
             'usergroup_id' => 'required|exists:usergroups,id',
+            'facilitybranch_id' => 'required|exists:facilitybranches,id',
+            'selectedBranches' => 'array',
+            'selectedBranches.*' => 'exists:facilitybranches,id', // Validate each branch ID
         ]);
 
-        // Hash the password and create the user
-        $validated['password'] = Hash::make($validated['password']); // Hash the password
+        $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'usergroup_id' => $validated['usergroup_id'],
+            'facilitybranch_id' => $validated['facilitybranch_id'], // Store the primary branch
+        ]);
+
+        // Attach the selected branches
+        $user->facilityBranches()->attach($validated['selectedBranches']);
+
 
         return redirect()->route('usermanagement.users.index')
             ->with('success', 'User created successfully.');
     }
-
 
     /**
      * Show the form for editing the specified user.
      */
     public function edit(User $user)
     {
+        $user->load('facilityBranches'); // Eager load the relationship
+
         return inertia('UserManagement/Users/Edit', [
             'user' => $user,
             'userGroups' => UserGroup::all(),
+            'facilityBranches' => FacilityBranch::all(),
+            'assignedBranchIds' => $user->facilityBranches->pluck('id'), // Send assigned branch IDs
         ]);
     }
 
@@ -80,20 +98,34 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255',  
-            'email' => 'required|string|email',      
+            'name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                Rule::unique('users')->ignore($user->id),
+            ],
             'usergroup_id' => 'required|exists:usergroups,id',
+            'facilitybranch_id' => 'required|exists:facilitybranches,id',
+            'selectedBranches' => 'array', 
+            'selectedBranches.*' => 'exists:facilitybranches,id', 
         ]);
 
-        // Update the user
-        $user->update($validated);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'usergroup_id' => $validated['usergroup_id'],
+            'facilitybranch_id' => $validated['facilitybranch_id'],
+        ]);
+
+        // Sync the selected branches using the correct pivot table name
+        $user->facilityBranches()->sync($validated['selectedBranches']);
 
         return redirect()->route('usermanagement.users.index')
             ->with('success', 'User updated successfully.');
     }
-
+  
     /**
      * Show the form for resetting the password of the specified user.
      */
