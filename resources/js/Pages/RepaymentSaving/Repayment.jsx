@@ -493,7 +493,7 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                                     )}
 
                                     {/* Loan Details Section */}
-                                    {data.customer_id && (
+                                    {data.loan_id ? (
                                         <section className="border-b border-gray-200 pb-4">
                                             <h4 className="text-md font-semibold text-gray-700 mb-3">Loan Details</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -569,6 +569,8 @@ export default function Repayment({ loanTypes , paymentTypes}) {
                                             )}
 
                                         </section>
+                                    ) : (
+                                        data.customer_id && (<p className="text-center text-gray-700">No active loan found.</p> )
                                     )}
                                 </div>
                             </div>

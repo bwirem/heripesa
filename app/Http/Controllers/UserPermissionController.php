@@ -6,6 +6,7 @@ use App\Models\UserGroup;
 use App\Models\UserGroupModuleItem;
 use App\Models\UserGroupFunction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response; // Import the Response facade
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -57,8 +58,7 @@ class UserPermissionController extends Controller
      */
     public function storePermissions(Request $request, int $userGroupId)
     {
-        \Log::info('Request Data: ' . json_encode($request->all()));
-    
+           
         // Validate the incoming request
         $request->validate([
             'permissions' => 'required|array',
@@ -139,122 +139,183 @@ class UserPermissionController extends Controller
         return $permissionsData;
     }
 
-
+    /**
+     * assignAllPermissionsToAdmin
+     *
+     * @return array
+     */
     public function assignAllPermissionsToAdmin(UserGroup $userGroup)
     {
-        \Log::info('Assigning all permissions to Admin group: ' . $userGroup->id);
-    
+          
         $modules = $this->getModuleItems();
         
         foreach ($modules as $moduleKey => $items) {
             foreach ($items as $item) {
-                \Log::info('Processing module item: ' . $item['key']);
-                
+                               
                 $moduleItem = UserGroupModuleItem::firstOrCreate([
                     'usergroup_id' => $userGroup->id,
                     'moduleitemkey' => $item['key']
-                ]);
-    
-                // Log module item creation
-                \Log::info('Module item created/exists: ' . $moduleItem->id);
-    
+                ]);    
+                
                 $functionAccessKeys = $this->getFunctionAccess($item['key']);
                 foreach ($functionAccessKeys as $accessKey => $accessValue) {
                     UserGroupFunction::create([
                         'usergroup_id' => $userGroup->id,
                         'usergroupmoduleitem_id' => $moduleItem->id,
                         'functionaccesskey' => $accessKey,
-                    ]);
-                    \Log::info('Function access created: ' . $accessKey);
+                    ]);                    
                 }
             }
         }
     }
-    
-
 
     /**
-     * Get the modules data.
+     * Get getModulesAndItems.
+     *
+     * @return array
+     */
+    // public function getModulesAndItems()
+    // {
+    //     $modules = $this->getModules();
+    //     $moduleItems = $this->getModuleItems();
+
+    //     return response()->json([
+    //         'modules' => $modules,
+    //         'moduleItems' => $moduleItems,
+    //     ]);
+    // }    
+
+    public function getModulesAndItems()
+    {
+        $userGroupId = Auth::user()?->usergroup_id;
+
+        // Fetch the modules and module items
+        $modules = $this->getModules();
+        $moduleItems = $this->getModuleItems();
+
+        // Fetch the permissions for the specific user group
+        $permissionsData = $this->getPermissions(UserGroup::find($userGroupId));
+
+        // Initialize arrays to hold allowed modules and module items
+        $allowedModules = [];
+        $allowedModuleItems = [];
+
+        // Loop through the module items and check if the user has permission
+        foreach ($moduleItems as $moduleKey => $items) {
+            $hasPermission = false;
+            $filteredItems = [];
+
+            // Check if the user has permission for any of the items in the module
+            foreach ($items as $item) {
+                if (in_array($item['key'], array_column($permissionsData, 'moduleitemkey'))) {
+                    $hasPermission = true;
+                    $filteredItems[] = $item; // Add allowed item to the module's list
+                }
+            }
+
+            // If the user has permission for at least one item in the module, add the module to the allowed list
+            if ($hasPermission) {
+                $allowedModules[] = $moduleKey;
+                $allowedModuleItems[$moduleKey] = $filteredItems; // Group items under their module
+            }
+        }
+
+        // Filter the modules to only return the ones the user has access to, and re-index
+        $filteredModules = array_values(array_filter($modules, fn($module) => in_array($module['modulekey'], $allowedModules)));
+
+        // Return a JSON response with the allowed modules and module items
+        return response()->json([
+            'modules' => $filteredModules,  // Filtered modules properly structured
+            'moduleItems' => $allowedModuleItems,  // Module items grouped under their modules
+        ]);
+    }
+
+
+   /**
+     * Get the modules data with icons.
      *
      * @return array
      */
     private function getModules(): array
     {
         return [
-            ['modulekey' => 'customer', 'moduletext' => 'Customers'],
-            ['modulekey' => 'loan', 'moduletext' => 'Loan Management'],
-            ['modulekey' => 'repaymentsSavings', 'moduletext' => 'Repayments & Savings'],
-            ['modulekey' => 'expenses', 'moduletext' => 'Expenses'],
-            ['modulekey' => 'humanresurces', 'moduletext' => 'Human Resource'],
-            ['modulekey' => 'accounting', 'moduletext' => 'Financial Accounting'],
-            ['modulekey' => 'reporting', 'moduletext' => 'Reporting/Analytics'],
-            ['modulekey' => 'systemConfig', 'moduletext' => 'System Configuration'],
-            ['modulekey' => 'userManagement', 'moduletext' => 'User Management'],
-            ['modulekey' => 'security', 'moduletext' => 'Security'],
+            ['modulekey' => 'dashboard', 'moduletext' => 'Dashboard', 'icon' => 'dashboard'], // Add Dashboard here
+            ['modulekey' => 'customer', 'moduletext' => 'Customers', 'icon' => 'customer'],
+            ['modulekey' => 'loan', 'moduletext' => 'Loan Management', 'icon' => 'loan'],
+            ['modulekey' => 'repaymentsSavings', 'moduletext' => 'Repayments & Savings', 'icon' => 'attach_money'],
+            ['modulekey' => 'expenses', 'moduletext' => 'Expenses', 'icon' => 'expenses_setup'],
+            ['modulekey' => 'humanresurces', 'moduletext' => 'Human Resource', 'icon' => 'person'],
+            ['modulekey' => 'accounting', 'moduletext' => 'Financial Accounting', 'icon' => 'financial_accounting'],
+            ['modulekey' => 'reporting', 'moduletext' => 'Reporting/Analytics', 'icon' => 'reporting_analytics'],
+            ['modulekey' => 'systemConfig', 'moduletext' => 'System Configuration', 'icon' => 'system_config'],
+            ['modulekey' => 'userManagement', 'moduletext' => 'User Management', 'icon' => 'manage_accounts'],
+            ['modulekey' => 'security', 'moduletext' => 'Security', 'icon' => 'security_settings'],
         ];
     }
 
     /**
-     * Get the module items data.
+     * Get the module items data with icons.
      *
      * @return array
      */
     private function getModuleItems(): array
     {
         return [
+            'dashboard' => [
+                ['key' => 'dashboard', 'text' => 'Overview', 'icon' => 'dashboard'], // Example item for Dashboard
+            ],
             'customer' => [
-                ['key' => 'customer0', 'text' => 'Registration'],
-                ['key' => 'customer1', 'text' => 'Customer Members'],
-                ['key' => 'customer2', 'text' => 'Guarantors'],
+                ['key' => 'customer0', 'text' => 'Registration', 'icon' => 'customer'],
+                ['key' => 'customer1', 'text' => 'Customer Members', 'icon' => 'person'],
+                ['key' => 'customer2', 'text' => 'Guarantors', 'icon' => 'person'],
             ],
             'loan' => [
-                ['key' => 'loan0', 'text' => 'Application'],
-                ['key' => 'loan1', 'text' => 'Approval Workflow'],
-                ['key' => 'loan2', 'text' => 'Disbursement'],
-                ['key' => 'loan3', 'text' => 'Reconciliation'],
-                ['key' => 'loan4', 'text' => 'History'],
+                ['key' => 'loan0', 'text' => 'Application', 'icon' => 'loan'],
+                ['key' => 'loan1', 'text' => 'Approval Workflow', 'icon' => 'loan_reconciliation'],
+                ['key' => 'loan2', 'text' => 'Disbursement', 'icon' => 'paid'],
+                ['key' => 'loan3', 'text' => 'Reconciliation', 'icon' => 'sales_history'],
+                ['key' => 'loan4', 'text' => 'History', 'icon' => 'history'],
             ],
             'repaymentsSavings' => [
-                ['key' => 'repaymentsavings0', 'text' => 'Repayments'],
-                ['key' => 'repaymentsavings1', 'text' => 'Savings'],
-                ['key' => 'repaymentsavings2', 'text' => 'Collections'],
+                ['key' => 'repaymentsavings0', 'text' => 'Repayments', 'icon' => 'attach_money'],
+                ['key' => 'repaymentsavings1', 'text' => 'Savings', 'icon' => 'attach_money'],
+                ['key' => 'repaymentsavings2', 'text' => 'Collections', 'icon' => 'attach_money'],
             ],
             'expenses' => [
-                ['key' => 'expenses0', 'text' => 'Post Expenses'],
-                ['key' => 'expenses1', 'text' => 'Expenses History'],
+                ['key' => 'expenses0', 'text' => 'Post Expenses', 'icon' => 'expenses_setup'],
+                ['key' => 'expenses1', 'text' => 'Expenses History', 'icon' => 'history'],
             ],
             'humanresurces' => [
-                ['key' => 'humanresurces0', 'text' => 'Employee Bio Data'],
-                ['key' => 'humanresurces1', 'text' => 'Import Employee Data'],
-                ['key' => 'humanresurces2', 'text' => 'Termination'],
-                ['key' => 'humanresurces3', 'text' => 'Payroll'],
+                ['key' => 'humanresurces0', 'text' => 'Employee Bio Data', 'icon' => 'person'],
+                ['key' => 'humanresurces1', 'text' => 'Import Employee Data', 'icon' => 'upload'],
+                ['key' => 'humanresurces2', 'text' => 'Termination', 'icon' => 'person_outline'],
+                ['key' => 'humanresurces3', 'text' => 'Payroll', 'icon' => 'payroll'],
             ],
             'accounting' => [
-                ['key' => 'accounting0', 'text' => 'General Ledger'],
-                ['key' => 'accounting1', 'text' => 'Profit & Loss Statements'],
+                ['key' => 'accounting0', 'text' => 'General Ledger', 'icon' => 'general_ledger'],
+                ['key' => 'accounting1', 'text' => 'Profit & Loss Statements', 'icon' => 'profit_loss'],
             ],
             'reporting' => [
-                ['key' => 'reportingAnalytics0', 'text' => 'Loan Portfolio Reports'],
-                ['key' => 'reportingAnalytics1', 'text' => 'Client Activity Reports'],
-                ['key' => 'reportingAnalytics2', 'text' => 'Financial Performance Analytics'],
+                ['key' => 'reportingAnalytics0', 'text' => 'Loan Portfolio Reports', 'icon' => 'loan_reports'],
+                ['key' => 'reportingAnalytics1', 'text' => 'Client Activity Reports', 'icon' => 'client_reports'],
+                ['key' => 'reportingAnalytics2', 'text' => 'Financial Performance Analytics', 'icon' => 'financial_analytics'],
             ],
             'systemConfig' => [
-                ['key' => 'systemconfiguration0', 'text' => 'Loan Setup'],
-                ['key' => 'systemconfiguration1', 'text' => 'Expenses Setup'],
-                ['key' => 'systemconfiguration2', 'text' => 'Human Resource Setup'],
-                ['key' => 'systemconfiguration3', 'text' => 'Accounting Setup'],
-                ['key' => 'systemconfiguration4', 'text' => 'Location Setup'],
-                ['key' => 'systemconfiguration5', 'text' => 'Facility Setup'],
+                ['key' => 'systemconfiguration0', 'text' => 'Loan Setup', 'icon' => 'loan_setup'],
+                ['key' => 'systemconfiguration1', 'text' => 'Expenses Setup', 'icon' => 'expenses_setup'],
+                ['key' => 'systemconfiguration2', 'text' => 'Human Resource Setup', 'icon' => 'person'],
+                ['key' => 'systemconfiguration3', 'text' => 'Accounting Setup', 'icon' => 'financial_accounting'],
+                ['key' => 'systemconfiguration4', 'text' => 'Location Setup', 'icon' => 'location_setup'],
+                ['key' => 'systemconfiguration5', 'text' => 'Facility Setup', 'icon' => 'facility_setup'],
             ],
             'userManagement' => [
-                ['key' => 'userManagement0', 'text' => 'Manage Users'],
+                ['key' => 'usermanagement', 'text' => 'Manage Users', 'icon' => 'manage_accounts'],
             ],
             'security' => [
-                ['key' => 'security0', 'text' => 'Audit Trail'],
+                ['key' => 'security', 'text' => 'Audit Trail', 'icon' => 'security_settings'],
             ],
         ];
     }
-
     /**
      * Get the function access data.
      *

@@ -3,10 +3,11 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faBars, faTimes, faUser, faSignOutAlt, faHome, faShoppingCart, faPlusSquare, faMoneyBill, faClipboardList,
-    faMoneyBillAlt, faHistory, faBoxes, faFileInvoice, faCartPlus, faBook, faChartBar, faFileAlt, faUsersCog,
-    faCogs, faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, faUserFriends, faCalculator, faFileContract,
-    faUpload, faUserSlash, faMoneyCheckAlt, faCog, faUsers, faUserPlus, faHandHoldingUsd // ADDED HERE
+    faBars, faTimes, faUser, faSignOutAlt, faHome, faShoppingCart, faPlusSquare, faMoneyBill, 
+    faClipboardList, faMoneyBillAlt, faHistory, faBoxes, faFileInvoice, faCartPlus, faBook, 
+    faChartBar, faUsersCog, faCogs, faBuilding, faShieldAlt, faColumns, faFileInvoiceDollar, 
+    faUserFriends, faCalculator, faFileContract, faUpload, faUserSlash, faMoneyCheckAlt, 
+    faCog, faUserPlus, faHandHoldingUsd
 } from "@fortawesome/free-solid-svg-icons";
 import { faHistory as faSalesHistory } from '@fortawesome/free-solid-svg-icons';
 import { faFileInvoice as faloanSetupIcon } from '@fortawesome/free-solid-svg-icons';
@@ -14,15 +15,16 @@ import { faMoneyBillWave as faExpensesSetupIcon } from '@fortawesome/free-solid-
 import { faMapMarkerAlt as faLocationSetupIcon } from '@fortawesome/free-solid-svg-icons';
 import "@fortawesome/fontawesome-svg-core/styles.css";
 
+import usePermissionsStore from "../stores/usePermissionsStore";
 
 // Constants for CSS classes
 const navLinkClasses = 'flex items-center p-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md';
 const caretClasses = (isOpen) => `caret ${isOpen ? 'rotate-180' : ''}`;
 
-// Optimized Icon Map (using only icons actively referenced and differentiating similar features)
+// Optimized Icon Map
 const iconMap = {
     home: faHome,
-    add_shopping_cart: faShoppingCart, // Removed the duplicate add_shopping_cart
+    add_shopping_cart: faShoppingCart,
     post_add: faPlusSquare,
     paid: faMoneyBill,
     loan_reconciliation: faClipboardList,
@@ -32,11 +34,11 @@ const iconMap = {
     inventory: faBoxes,
     request_quote: faFileInvoice,
     shopping_cart: faCartPlus,
-    financial_accounting: faCalculator, // Distinct icon for Financial Accounting
+    financial_accounting: faCalculator,
     general_ledger: faBook,
     profit_loss: faColumns,
-    reporting_analytics: faChartBar, // Distinct icon for Reporting/Analytics
-    loan_reports: faFileContract,  //Use loan reports
+    reporting_analytics: faChartBar,
+    loan_reports: faFileContract,
     client_reports: faUserFriends,
     financial_analytics: faFileInvoiceDollar,
     manage_accounts: faUsersCog,
@@ -46,14 +48,14 @@ const iconMap = {
     facility_setup: faBuilding,
     security_settings: faShieldAlt,
     system_config: faCogs,
-
-    person: faUser, // For Employee Bio Data
-    upload: faUpload, //For Import Employee Data
-    person_outline: faUserSlash, // For Termination  (assuming you add faUserSlash to your imports)
-    payroll: faMoneyCheckAlt, //  For Payroll (assuming you add faMoneyCheckAlt to imports)
-    settings: faCog, //Or faCogs for setup
-    customer: faUserPlus, // New: Icon for Customer Management (Adding User)
-    loan: faHandHoldingUsd  //New: Icon for Loan Management (Hand holding money)
+    person: faUser,
+    upload: faUpload,
+    person_outline: faUserSlash,
+    payroll: faMoneyCheckAlt,
+    settings: faCog,
+    customer: faUserPlus,
+    loan: faHandHoldingUsd,
+    dashboard: faHome // Add icon for the Dashboard
 };
 
 // SidebarNavLink Component
@@ -113,26 +115,26 @@ function MenuButton({ children, onClick, className }) {
 
 // Main Component
 export default function AuthenticatedLayout({ header, children }) {
+  
+    const { modules, moduleItems,fetchPermissions } = usePermissionsStore();
+
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-    const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth >= 640);
-    const [sidebarState, setSidebarState] = useState({
-        customer: false,
-        loan: false,
-        repaymentsSavings: false,
-        expenses: false,
-        humanresurces: false,
-        accounting: false,
-        reporting: false,
-        systemConfig: false,
-        userManagement: false,
-        security: false,
-    });
+    const [sidebarVisible, setSidebarVisible] = useState(window.innerWidth >= 640);   
+    const [sidebarState, setSidebarState] = useState({});
 
     useEffect(() => {
-        const handleResize = () => setSidebarVisible(window.innerWidth >= 640);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        fetchPermissions(); // Fetch permissions on mount
+    }, []);
+
+   
+    useEffect(() => {
+              
+        const initialState = {};
+        modules.forEach(module => {
+            initialState[module.modulekey] = false; // Set initial state to false
+        });
+        setSidebarState(initialState);
     }, []);
 
     const toggleSidebarSection = (section) => {
@@ -142,189 +144,21 @@ export default function AuthenticatedLayout({ header, children }) {
         }));
     };
 
-    const sidebarMenuItems = [
-        {
-            label: 'Home',
-            icon: iconMap.home,
-            isOpen: true,
-            toggleOpen: () => { },
-            href: '/dashboard',
-        },
-        {
-            label: 'Customers',
-            icon: iconMap.customer,  // Using the new customer icon
-            isOpen: sidebarState.customer,
-            toggleOpen: () => toggleSidebarSection('customer'),
-            children: (
-                <>
-                    <SidebarNavLink href="/customer0" icon={iconMap.add_shopping_cart}>
-                        Registration
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/customer1" icon={iconMap.post_add}>
-                        Customer Members
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/customer2" icon={iconMap.paid}>
-                        Guarantors
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'Loan Management',
-            icon: iconMap.loan, // Using the new loan icon
-            isOpen: sidebarState.loan,
-            toggleOpen: () => toggleSidebarSection('loan'),
-            children: (
-                <>
-                    <SidebarNavLink href="/loan0" icon={iconMap.add_shopping_cart}>
-                        Application
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/loan1" icon={iconMap.post_add}>
-                        Approval Workflow
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/loan2" icon={iconMap.paid}>
-                        Disbursement
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/loan3" icon={iconMap.loan_reconciliation}>
-                        Reconciliation
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/loan4" icon={iconMap.sales_history}>
-                        History
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'Repayments & Savings',
-            icon: iconMap.inventory,
-            isOpen: sidebarState.repaymentsSavings,
-            toggleOpen: () => toggleSidebarSection('repaymentsSavings'),
-            children: (
-                <>
-                    <SidebarNavLink href="/repaymentsavings0" icon={iconMap.request_quote}>
-                        Repayments
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/repaymentsavings1" icon={iconMap.shopping_cart}>
-                        Savings
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/repaymentsavings2" icon={iconMap.request_quote}>
-                        Collections
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'Expenses',
-            icon: iconMap.attach_money,
-            isOpen: sidebarState.expenses,
-            toggleOpen: () => toggleSidebarSection('expenses'),
-            children: (
-                <>
-                    <SidebarNavLink href="/expenses0" icon={iconMap.post_add}>
-                        Post Expenses
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/expenses1" icon={iconMap.history}>
-                        Expenses History
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'Human Resource',
-            icon: faUsers, // More appropriate icon for HRM
-            isOpen: sidebarState.humanresurces,
-            toggleOpen: () => toggleSidebarSection('humanresurces'),
-            children: (
-                <>
-                    <SidebarNavLink href="/humanresurces0" icon={iconMap.person}> {/* Updated icon */}
-                        Employee Bio Data
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/humanresurces1" icon={iconMap.upload}> {/* Updated icon */}
-                        Import Employee Data
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/humanresurces2" icon={iconMap.person_outline}> {/* Updated icon */}
-                        Termination
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/humanresurces3" icon={iconMap.payroll}> {/* Updated icon */}
-                        Payroll
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-
-        {
-            label: 'Financial Accounting',
-            icon: iconMap.financial_accounting,  // Use the distinct icon
-            isOpen: sidebarState.accounting,
-            toggleOpen: () => toggleSidebarSection('accounting'),
-            children: (
-                <>
-                    <SidebarNavLink href="/accounting0" icon={iconMap.general_ledger}>
-                        General Ledger
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/accounting1" icon={iconMap.profit_loss}>
-                        Profit & Loss Statements
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'Reporting/Analytics',
-            icon: iconMap.reporting_analytics,  // Use the distinct icon
-            isOpen: sidebarState.reporting,
-            toggleOpen: () => toggleSidebarSection('reporting'),
-            children: (
-                <>
-                    <SidebarNavLink href="/reportingAnalytics0" icon={iconMap.loan_reports}>
-                        Loan Portfolio Reports
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/reportingAnalytics1" icon={iconMap.client_reports}>
-                        Client Activity Reports
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/reportingAnalytics2" icon={iconMap.financial_analytics}>
-                        Financial Performance Analytics
-                    </SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'System Configuration',
-            icon: iconMap.system_config,
-            isOpen: sidebarState.systemConfig,
-            toggleOpen: () => toggleSidebarSection('systemConfig'),
-            children: (
-                <>
-                    <SidebarNavLink href="/systemconfiguration0" icon={iconMap.loan_setup}>Loan Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration1" icon={iconMap.expenses_setup}>Expenses Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration2" icon={iconMap.manage_accounts}>
-                        Human Resource Setup
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration3" icon={iconMap.financial_accounting}>
-                        Accounting Setup
-                    </SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration4" icon={iconMap.location_setup}>Location Setup</SidebarNavLink>
-                    <SidebarNavLink href="/systemconfiguration5" icon={iconMap.facility_setup}>Facility Setup</SidebarNavLink>
-                </>
-            ),
-        },
-        {
-            label: 'User Management',
-            icon: iconMap.manage_accounts,
-            isOpen: sidebarState.userManagement,
-            toggleOpen: () => toggleSidebarSection('userManagement'),
-            href: "/usermanagement",
-        },
-        {
-            label: 'Security',
-            icon: iconMap.security_settings,
-            isOpen: sidebarState.security,
-            toggleOpen: () => toggleSidebarSection('security'),
-            href: "/security",
-        },
-    ];
+    const sidebarMenuItems = modules.map(module => ({
+        label: module.moduletext,
+        icon: iconMap[module.icon] || null, // Get the icon for the module
+        isOpen: sidebarState[module.modulekey],
+        toggleOpen: () => toggleSidebarSection(module.modulekey),
+        children: moduleItems[module.modulekey].map(item => ({
+            label: item.text,
+            icon: iconMap[item.icon] || null, // Get the icon for the item
+            href: `/${item.key}`,
+        })),
+    }));
 
     return (
-        <div className="min-h-screen flex bg-gray-100">
+        <div className="min-h-screen flex bg-gray-100">            
+
             {/* Sidebar */}
             <div
                 className={`sidebar transition-all duration-300 ease-in-out ${sidebarVisible ? 'block' : 'hidden'} sm:block bg-gray-800 text-white border-r border-gray-700 overflow-y-auto`}
@@ -352,8 +186,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                 label={item.label}
                                 isOpen={item.isOpen}
                                 toggleOpen={item.toggleOpen}
-                                children={item.children}
-                                href={item.href}
+                                children={item.children && item.isOpen ? (
+                                    <>
+                                        {item.children.map((child) => (
+                                            <SidebarNavLink key={child.label} href={child.href} icon={child.icon}>
+                                                {child.label}
+                                            </SidebarNavLink>
+                                        ))}
+                                    </>
+                                ) : null}
                             />
                         ))}
                     </ul>
@@ -361,7 +202,7 @@ export default function AuthenticatedLayout({ header, children }) {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col h-screen overflow-hidden"> {/* Changed to h-screen and overflow-hidden for container*/}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 <nav className="border-b border-gray-200 bg-white">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-16 justify-between">
@@ -462,12 +303,11 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </nav>
 
-                <main className="flex-1 h-full overflow-y-auto"> {/* Changed to h-full and overflow-y-auto for content area */}
+                <main className="flex-1 h-full overflow-y-auto">
                     <div className="p-4 h-full">
                         {children}
                     </div>
                 </main>
-
             </div>
         </div>
     );

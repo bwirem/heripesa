@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Modal from '@/Components/CustomModal';
-import { Head, useForm } from '@inertiajs/react';
+import { Head,Link, useForm } from '@inertiajs/react';
 import { Inertia } from '@inertiajs/inertia';
 import { useState } from 'react';
 
@@ -182,14 +182,15 @@ export default function Create({ userGroups, facilityBranches }) {
 
                             {/* Buttons */}
                             <div className="flex justify-end space-x-4">
-                                <button
-                                    type="button"
-                                    onClick={() => Inertia.get(route('usermanagement.users.index'))}
+                                <Link
+                                    href={route('usermanagement.users.index')}  // Using the route for navigation
+                                    method="get"  // Optional, if you want to define the HTTP method (GET is default)
+                                    preserveState={true}  // Keep the page state (similar to `preserveState: true` in the button)
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
-                                </button>
+                                </Link>
                                 <button
                                     type="submit"
                                     disabled={processing || isSaving}

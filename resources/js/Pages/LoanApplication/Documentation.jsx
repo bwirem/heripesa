@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head,Link, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
@@ -722,14 +722,15 @@ return (
 
                         {/* Submit Button */}
                         <div className="flex justify-end space-x-4 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => Inertia.get(route('loan0.index'))}
+                            <Link
+                                href={route('loan0.index')}  // Using the route for navigation
+                                method="get"  // Optional, if you want to define the HTTP method (GET is default)
+                                preserveState={true}  // Keep the page state (similar to `preserveState: true` in the button)
                                 className="bg-gray-300 text-gray-700 rounded p-2 flex items-center space-x-2"
                             >
                                 <FontAwesomeIcon icon={faTimesCircle} />
                                 <span>Cancel</span>
-                            </button>
+                            </Link>
                             
                             <button
                                 type="submit"

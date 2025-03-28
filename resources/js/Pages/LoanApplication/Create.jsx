@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head,Link, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faSave, faTimesCircle, faFileUpload } from '@fortawesome/free-solid-svg-icons';
@@ -19,7 +19,7 @@ const debounce = (func, delay) => {
     };
 };
 
-export default function Create({ loanTypes }) {
+export default function Create({auth, loanTypes,facilityBranches}) {
     // Form state using Inertia's useForm hook
     const { data, setData, post, errors, processing, reset } = useForm({
         customer_type: 'individual', // Default value
@@ -39,6 +39,7 @@ export default function Create({ loanTypes }) {
         totalRepayment: 0,
         stage: 1,
         applicationForm: null, // Add applicationForm to data
+        facilitybranch_id: auth?.user?.facilitybranch_id || "",
     });
 
     // Customer Search State
@@ -454,6 +455,29 @@ export default function Create({ loanTypes }) {
                                 </div>
                             </div>
 
+                            {/* Branch Section */}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label htmlFor="facilitybranch" className="block text-sm font-medium text-gray-700">Branch</label>
+                                        <select
+                                            id="facilitybranch"
+                                            value={data.facilitybranch_id}    
+                                            onChange={(e) => setData('facilitybranch_id', e.target.value)}                                    
+                                            className="w-full border p-2 rounded text-sm"
+                                            required
+                                        >
+                                            <option value="" disabled>Select Branch</option>
+                                            {facilityBranches.map(branch => (
+                                                <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                            ))}
+                                        </select>
+                                        {errors.loanType && <p className="text-sm text-red-600">{errors.loanType}</p>}
+                                    </div>                                  
+                                    
+                                </div>
+                            </div>   
+
                             {/* Loan Details Section */}
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -580,15 +604,16 @@ export default function Create({ loanTypes }) {
                             )}
 
                             {/* Submit Button */}
-                            <div className="flex justify-end space-x-4 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => Inertia.get(route('loan0.index'))}
+                            <div className="flex justify-end space-x-4 mt-6">                                
+                                <Link
+                                    href={route('loan0.index')}  // Using the route for navigation
+                                    method="get"  // Optional, if you want to define the HTTP method (GET is default)
+                                    preserveState={true}  // Keep the page state (similar to `preserveState: true` in the button)
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
-                                </button>
+                                </Link>
                                 <button
                                     type="submit"
                                     disabled={processing || isSaving}

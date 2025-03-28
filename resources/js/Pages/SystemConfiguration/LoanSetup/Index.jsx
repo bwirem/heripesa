@@ -7,9 +7,10 @@ import {
     faCreditCard,   // Payment Types    
     faLayerGroup,   // Billing Item Group
     faListAlt,      // Packages
-    faUsers,         // Customers  
+    faUsers,        // Customers  
     faUserCheck     // Guarantors
 } from '@fortawesome/free-solid-svg-icons';
+import { Link } from '@inertiajs/react';
 
 export default function Index() {
     // Placeholder counts (replace with actual values from props or data fetching)
@@ -24,14 +25,14 @@ export default function Index() {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Billing Setup Dashboard
+                    Loan Setup Dashboard
                 </h2>
             }
         >
             <Head title="Billing Setup Dashboard" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">                
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">                 
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Currencies */}
@@ -44,7 +45,7 @@ export default function Index() {
                                     <p className="text-gray-600">Currencies</p>
                                     <h3 className="text-2xl font-bold">{currencyCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.currencies.index')} className="text-red-500 hover:underline">Manage Currencies</a>
+                                        <Link href={route('systemconfiguration0.currencies.index')} className="text-red-500 hover:underline">Manage Currencies</Link>
                                     </div>
                                 </div>
                             </div>
@@ -60,7 +61,7 @@ export default function Index() {
                                     <p className="text-gray-600">Payment Types</p>
                                     <h3 className="text-2xl font-bold">{paymentTypeCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.paymenttypes.index')} className="text-green-500 hover:underline">Manage Payment Types</a>
+                                        <Link href={route('systemconfiguration0.paymenttypes.index')} className="text-green-500 hover:underline">Manage Payment Types</Link>
                                     </div>
                                 </div>
                             </div>
@@ -76,7 +77,7 @@ export default function Index() {
                                     <p className="text-gray-600">Fees Types</p>
                                     <h3 className="text-2xl font-bold">{feestypeCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.feestypes.index')} className="text-purple-500 hover:underline">Manage Fees Types</a>
+                                        <Link href={route('systemconfiguration0.feestypes.index')} className="text-purple-500 hover:underline">Manage Fees Types</Link>
                                     </div>
                                 </div>
                             </div>
@@ -92,15 +93,13 @@ export default function Index() {
                                     <p className="text-gray-600">Packages</p>
                                     <h3 className="text-2xl font-bold">{packageCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.loanpackages.index')} className="text-green-500 hover:underline">Manage Packages</a>
+                                        <Link href={route('systemconfiguration0.loanpackages.index')} className="text-green-500 hover:underline">Manage Packages</Link>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
-                  
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"> 
                         {/* Customers */}
                         <div className="bg-white shadow-md rounded-lg p-6">
@@ -112,7 +111,7 @@ export default function Index() {
                                     <p className="text-gray-600">Customers</p>
                                     <h3 className="text-2xl font-bold">{customerCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.customers.index')} className="text-blue-500 hover:underline">Manage Customers</a>
+                                        <Link href={route('systemconfiguration0.customers.index')} className="text-blue-500 hover:underline">Manage Customers</Link>
                                     </div>
                                 </div>
                             </div>
@@ -128,7 +127,7 @@ export default function Index() {
                                     <p className="text-gray-600">Guarantors</p>
                                     <h3 className="text-2xl font-bold">{guarantorCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration0.guarantors.index')} className="text-blue-500 hover:underline">Manage Guarantors</a>
+                                        <Link href={route('systemconfiguration0.guarantors.index')} className="text-blue-500 hover:underline">Manage Guarantors</Link>
                                     </div>
                                 </div>
                             </div>
@@ -140,3 +139,4 @@ export default function Index() {
         </AuthenticatedLayout>
     );
 }
+

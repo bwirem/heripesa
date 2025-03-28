@@ -5,15 +5,17 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faEdit } from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 
-export default function Index({ auth, loans, filters }) {
+export default function Index({ auth, loans,facilityBranches, filters }) {
   const { data, setData, get, errors } = useForm({
     search: filters.search || "",
-    stage: filters.stage || "3",
+    stage: filters.stage || "",
+    facilitybranch_id: filters.facilitybranch_id || auth?.user?.facilitybranch_id || "",
   });
   
   useEffect(() => {
-    get(route("loan1.index"), { preserveState: true });
-  }, [data.search, data.stage]); // Remove `get` from dependencies
+          // Refetch the data whenever search, stage, or facility branch changes
+          get(route("loan1.index"), { preserveState: true });
+  }, [data.search, data.stage, data.facilitybranch_id, get]);
 
   const handleSearchChange = (e) => {
     setData("search", e.target.value);
@@ -47,6 +49,20 @@ export default function Index({ auth, loans, filters }) {
         {/* Header Actions */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            
+            <div className="relative flex items-center">                                 
+                <select
+                    value={data.facilitybranch_id}
+                    onChange={(e) => setData('facilitybranch_id', e.target.value)}
+                    className={`text-left border px-2 py-1 rounded text-sm w-full ${errors.facilitybranch_id ? 'border-red-500' : ''}`}
+                >
+                    <option value="">Select Branch</option>
+                    {Array.isArray(facilityBranches) && facilityBranches.map(branch => (
+                        <option key={branch.id} value={branch.id}>{branch.name}</option>
+                    ))}
+                </select>                        
+            </div>
+
             <div className="relative flex items-center">
               <FontAwesomeIcon icon={faSearch} className="absolute left-3 text-gray-500" />
               <input
@@ -61,6 +77,15 @@ export default function Index({ auth, loans, filters }) {
           </div>
 
           <ul className="flex space-x-2 mt-2">
+
+            <li
+              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
+                data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
+              }`}
+              onClick={() => handleStageChange("")}
+            >
+              All
+            </li>
            
             <li
               key="pending"
@@ -99,16 +124,7 @@ export default function Index({ auth, loans, filters }) {
               onClick={() => handleStageChange("7")}
             >
               Rejected
-            </li>
-
-            <li
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
-              onClick={() => handleStageChange("")}
-            >
-              All
-            </li>
+            </li>            
           </ul>
         </div>
 

@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Link } from '@inertiajs/react';  // Import Link
 import {
     faCog,        // Settings
     faLayerGroup, // Expense Item Group
@@ -23,7 +24,7 @@ export default function Index() {
             <Head title="Account Setup Dashboard" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">                   
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                         {/* Expense Item Group */}
                         <div className="bg-white shadow-md rounded-lg p-6">
@@ -35,7 +36,7 @@ export default function Index() {
                                     <p className="text-gray-600">Chart Of Account</p>
                                     <h3 className="text-2xl font-bold">{itemGroupCount}</h3>
                                     <div className="mt-2">
-                                        <a href={route('systemconfiguration3.chartofaccounts.index')} className="text-purple-500 hover:underline">Manage Account Option</a>
+                                        <Link href={route('systemconfiguration3.chartofaccounts.index')} className="text-purple-500 hover:underline">Manage Account Option</Link>
                                     </div>
                                 </div>
                             </div>
@@ -51,7 +52,7 @@ export default function Index() {
                                     <p className="text-gray-600">Other Option</p>
                                     <h3 className="text-2xl font-bold">{expenseItemCount}</h3>
                                     <div className="mt-2">
-                                        <a href="/addorlistexpense/view" className="text-green-500 hover:underline">Other Option</a>
+                                        <Link href="/addorlistexpense/view" className="text-green-500 hover:underline">Other Option</Link>
                                     </div>
                                 </div>
                             </div>

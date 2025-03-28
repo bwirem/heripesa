@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Head, useForm } from "@inertiajs/react";
+import { Head,Link, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faHome } from "@fortawesome/free-solid-svg-icons";
 import Modal from '@/Components/CustomModal';
 import axios from 'axios';
 import { Inertia } from '@inertiajs/inertia';
@@ -207,7 +209,7 @@ export default function Index({ auth, usergroups, modules, moduleitems, function
             });
 
             showAlert(response.data.success);
-            Inertia.get(route('usermanagement.userpermission.index'));
+            Inertia.get(route('usermanagement.userpermission.index'));           
         } catch (error) {
             console.error("Error saving permissions:", error);
             showAlert(error.response?.data?.message || 'Failed to save permissions. Please try again.');
@@ -217,8 +219,20 @@ export default function Index({ auth, usergroups, modules, moduleitems, function
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Permission</h2>}>
             <Head title="Permission" />
-            <div className="container mx-auto p-4 flex space-x-4">
 
+            {/* Header Actions */}
+            <div className="flex flex-col md:flex-row justify-between users-center mb-4">
+                <div className="flex users-center space-x-2 mb-4 md:mb-0"> 
+                    <Link
+                        href={route("usermanagement.index")}
+                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex items-center"
+                    >
+                        <FontAwesomeIcon icon={faHome} className="mr-1" /> Home
+                    </Link>    
+                </div>                    
+            </div>
+           
+            <div className="container mx-auto p-4 flex space-x-4">
                 {/* Usergroups Table */}
                 <div className="flex-1 overflow-x-auto">
                     <table className="min-w-full border border-gray-300 shadow-md rounded">

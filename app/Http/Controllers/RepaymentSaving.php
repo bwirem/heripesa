@@ -180,7 +180,11 @@ class RepaymentSaving extends Controller
             'transaction_type' => 'required|in:deposit,withdrawal', // Validate transaction type
         ]);
 
-        $saving = Saving::where('customer_id', $customerId)->firstOrFail(); // Find the saving account
+        //$saving = Saving::where('customer_id', $customerId)->firstOrFail(); // Find the saving 
+        $saving = Saving::firstOrCreate(
+            ['customer_id' =>$customerId],
+            ['balance' => 0] // Default balance for new savings accounts
+        );
 
         $amount = $validatedData['amount'];
 

@@ -37,6 +37,7 @@ class Loan extends Model
         'stage',
         'application_form',
         'status',
+        'facilitybranch_id'
     ];
 
     /**

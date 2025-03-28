@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Loan;
 use App\Models\LoanGuarantor;
 use App\Models\BLSPackage;
+use App\Models\FacilityBranch;
 
 use App\Enums\LoanStage; // Or your constants class
 use App\Enums\ApprovalStatus;
@@ -52,12 +53,16 @@ class LoanApprovalController extends Controller
 
         }
 
+        if ($request->filled('facilitybranch_id')) {
+            $query->where('facilitybranch_id', $request->facilitybranch_id);
+        }
 
         // Only show stages less than or equal to 3
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return inertia('LoanApproval/Index', [
             'loans' => $loans,
+            'facilityBranches' => FacilityBranch::all(),
             'filters' => $request->only(['search', 'stage']),
         ]);
     }
@@ -82,11 +87,22 @@ class LoanApprovalController extends Controller
 
             ];
         });
-     
-        return inertia('LoanApproval/Edit', [
-            'loan' => $loan,
-            'loanTypes' => BLSPackage::all(),
-        ]);
+
+        switch ($loan->stage) {
+            case 3:
+                return inertia('LoanApproval/Edit', [
+                    'loan' => $loan,
+                    'loanTypes' => BLSPackage::all(),
+                ]);
+            case 4:
+                return inertia('LoanApproval/ManagerReview', [
+                    'loan' => $loan,
+                    'loanTypes' => BLSPackage::all(),
+                ]);
+            default:
+                abort(404, 'Invalid stage');
+        }
+        
     }
 
     /**

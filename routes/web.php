@@ -447,6 +447,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [UserPermissionController::class, 'index'])->name('index');         
             Route::get('/{userGroup}/permissions', [UserPermissionController::class, 'getPermissions'])->name('getPermissions');
             Route::post('/{userGroup}/permissions', [UserPermissionController::class, 'storePermissions'])->name('storePermissions');
+            // New route for fetching modules and items
+            Route::get('/modules-and-items', [UserPermissionController::class, 'getModulesAndItems'])->name('modulesAndItems');
         });   
 
     });

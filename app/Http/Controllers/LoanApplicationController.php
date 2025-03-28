@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\Loan;
 use App\Models\LoanGuarantor;
 use App\Models\BLSPackage;
+use App\Models\FacilityBranch;
 
 use App\Enums\LoanStage; // Or your constants class
 use App\Enums\ApprovalStatus;
@@ -44,12 +45,18 @@ class LoanApplicationController extends Controller
             $query->where('stage', $request->stage);
         }
 
+        if ($request->filled('facilitybranch_id')) {
+            $query->where('facilitybranch_id', $request->facilitybranch_id);
+        }
+
         // Only show stages less than or equal to 3
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return inertia('LoanApplication/Index', [
             'loans' => $loans,
+            'facilityBranches' => FacilityBranch::all(),
             'filters' => $request->only(['search', 'stage']),
+            //'auth' => Auth::user(),
         ]);
     }
 
@@ -60,6 +67,7 @@ class LoanApplicationController extends Controller
     {
         return inertia('LoanApplication/Create', [          
             'loanTypes' => BLSPackage::all(),
+            'facilityBranches' => FacilityBranch::all(),
         ]);
     }
 
@@ -89,7 +97,8 @@ class LoanApplicationController extends Controller
             'monthlyRepayment' => 'required|numeric',
             'totalRepayment' => 'required|numeric',
             'stage' => 'required|integer',
-            'applicationForm' => 'nullable|file|mimes:pdf,doc,docx|max:2048', // Max 2MB
+            'applicationForm' => 'nullable|file|mimes:pdf,doc,docx|max:2048', // Max 
+            'facilitybranch_id' => 'required|integer',
         ]);
 
         // Map validated data to model attributes
@@ -110,6 +119,7 @@ class LoanApplicationController extends Controller
             'monthly_repayment' => $validated['monthlyRepayment'], // Mapping to model
             'total_repayment' => $validated['totalRepayment'], // Mapping to model
             'stage' => $validated['stage'],
+            'facilitybranch_id' => $validated['facilitybranch_id'],
             'user_id' => Auth::id(),
         ];
 
@@ -158,6 +168,7 @@ class LoanApplicationController extends Controller
             return inertia('LoanApplication/Edit', [
                 'loan' => $loan,
                 'loanTypes' => BLSPackage::all(),
+                'facilityBranches' => FacilityBranch::all(),
             ]);
            
         }else{
@@ -211,6 +222,7 @@ class LoanApplicationController extends Controller
             'monthlyRepayment' => 'required|numeric',
             'totalRepayment' => 'required|numeric',
             'stage' => 'required|integer',
+            'facilitybranch_id' => 'required|integer',
            
         ];
 
@@ -240,6 +252,7 @@ class LoanApplicationController extends Controller
             'monthly_repayment' => $validated['monthlyRepayment'],
             'total_repayment' => $validated['totalRepayment'],
             'stage' => $validated['stage'],
+            'facilitybranch_id' => $validated['facilitybranch_id'],
             'user_id' => Auth::id(), // Ensure user_id is always updated
         ];
 
@@ -456,6 +469,7 @@ public function customerLoans($customerId)
 {
     $loan = Loan::with('payments') // Eager load payments
                ->where('customer_id', $customerId)
+               ->where('stage', 7)
                ->first();
 
     if ($loan) {

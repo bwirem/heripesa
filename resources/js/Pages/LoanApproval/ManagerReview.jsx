@@ -9,7 +9,7 @@ import axios from 'axios';
 import Modal from '../../Components/CustomModal.jsx';
 
 
-export default function Edit({ loan, loanTypes }) {
+export default function ManagerReview({ loan, loanTypes }) {
     // Form state using Inertia's useForm hook
     const { data, setData, put, errors, processing, reset } = useForm({
         customer_type: loan.customer_type,
@@ -68,74 +68,6 @@ export default function Edit({ loan, loanTypes }) {
     };
 
     //GUARANTOR FUNCTIONS END
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSaving(true);
-    
-        const formData = new FormData();
-        formData.append('stage', data.stage || '');
-    
-        let hasFile = false; // Track if at least one file is attached
-           
-        // Append Guarantors
-        data.guarantors.forEach((guarantor, index) => {
-            formData.append(`guarantors[${index}][guarantor_id]`, guarantor.guarantor_id);
-    
-            if (guarantor.collateral_doc instanceof File) {
-                formData.append(`guarantors[${index}][collateral_doc]`, guarantor.collateral_doc, guarantor.collateralDocName);
-                hasFile = true; // File is attached
-            }
-        });
-    
-        formData.append('_method', 'PUT'); // Method Spoofing
-    
-        // Alert if no file is attached or existing file is missing
-        if (!hasFile && data.guarantors.some(g => !g.collateral_doc)) {
-            showAlert('Please attach at least one collateral document.');
-            setIsSaving(false);
-            return;
-        }       
-    
-        try {
-            const response = await axios.post(route('loan1.update', loan.id), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-    
-            setIsSaving(false);            
-            showAlert(response.data.message);
-
-            setTimeout(() => {  // Introduce a short delay
-                resetForm();
-            }, 100); // Adjust the timeout as needed
-                
-    
-        } catch (error) {
-            setIsSaving(false);
-            console.error('Full error object:', error);
-            if (error.response && error.response.data) {
-                console.error('Error data:', error.response.data);
-                setData('errors', error.response.data.errors);
-            } else {
-                console.error("Error updating loan:", error);
-                showAlert('An error occurred while saving the application.');
-            }
-        }
-    };    
-
-    // Reset the form
-    const resetForm = () => { // No message parameter needed here
-        reset('', {
-            onSuccess: () => {
-                Inertia.reload({ // Only reload here
-                    only: ['loan.loan_guarantors'],
-                    preserveScroll: true
-                });
-            }
-        });
-    };   
 
     const handleApproveClick = () => {
         if (data.guarantors.length === 0) {
@@ -210,7 +142,7 @@ return (
             <div className="mx-auto max-w-5xl sm:px-6 lg:px-8">
                 <div className="bg-white p-8 shadow sm:rounded-lg">
                     <h3 className="text-lg font-semibold text-gray-800 mb-6">Loan Application Details</h3>
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form className="space-y-6">
 
                         {/* Customer Details Section */}
                         <section className="border-b border-gray-200 pb-4">
@@ -369,19 +301,37 @@ return (
 
                         {/* Stage Selection */}
                         <section>
-                            <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
-                                Stage
-                            </label>
-                            <select
-                                id="stage"
-                                value={data.stage}
-                                onChange={(e) => setData('stage', e.target.value)}
-                                className={`mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.stage ? 'border-red-500' : ''}`}
-                            >
-                                <option value="3">Pending</option>                                
-                                <option value="8">Rejected</option>
-                            </select>
-                            {errors.stage && <p className="text-sm text-red-600 mt-1">{errors.stage}</p>}
+                            <h4 className="text-md font-semibold text-gray-700 mb-3">Review Details</h4>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th> 
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>  
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>                                         
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {data.guarantors.map((guarantor, index) => (
+                                            <tr key={index}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {guarantor.guarantor_type === 'company' ? guarantor.company_name : `${guarantor.first_name} ${guarantor.surname}`}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {guarantor.collateralDocName || 'N/A'}
+                                                </td>  
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {guarantor.collateralDocName || 'N/A'}
+                                                </td>        
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {guarantor.collateralDocName || 'N/A'}
+                                                </td>                                             
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </section>
 
                         {/* Action Buttons */}
@@ -394,16 +344,7 @@ return (
                             >
                                 <FontAwesomeIcon icon={faTimesCircle} />
                                 <span>Cancel</span>
-                            </Link>
-
-                            <button
-                                type="submit"
-                                disabled={processing || isSaving}
-                                className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
-                            >
-                                <FontAwesomeIcon icon={faSave} />
-                                <span>{isSaving ? 'Saving...' : 'Save'}</span>
-                            </button>
+                            </Link>                           
                            
                             <button
                                 type="button"

@@ -7,12 +7,13 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 
 import Modal from '../../Components/CustomModal.jsx';
 
-
-export default function Index({ auth, loans, filters }) {
+export default function Index({ auth, loans, facilityBranches, filters }) {
     const { data, setData, get, errors } = useForm({
-        search: filters.search || "",
-        stage: filters.stage || "1",
+        search: filters.search || "",        
+        stage: filters.stage || "",
+        facilitybranch_id: filters.facilitybranch_id || auth?.user?.facilitybranch_id || "",       
     });
+
 
     const [modalState, setModalState] = useState({
         isOpen: false,
@@ -22,9 +23,9 @@ export default function Index({ auth, loans, filters }) {
     });
 
     useEffect(() => {
+        // Refetch the data whenever search, stage, or facility branch changes
         get(route("loan0.index"), { preserveState: true });
-    }, [data.search, data.stage, get]);
-
+    }, [data.search, data.stage, data.facilitybranch_id, get]);
 
     const handleSearchChange = (e) => {
         setData("search", e.target.value);
@@ -33,8 +34,7 @@ export default function Index({ auth, loans, filters }) {
     const handleStageChange = (stage) => {
         setData("stage", stage);
     };
-    
-    // Map loan stage numbers to labels
+
     const loanStageLabels = {
         1: 'Draft',  
         2: 'Documentation',      
@@ -50,6 +50,20 @@ export default function Index({ auth, loans, filters }) {
                 {/* Header Actions */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-4">
                     <div className="flex items-center space-x-2 mb-4 md:mb-0">
+
+                        <div className="relative flex items-center">                                 
+                            <select
+                                value={data.facilitybranch_id}
+                                onChange={(e) => setData('facilitybranch_id', e.target.value)}
+                                className={`text-left border px-2 py-1 rounded text-sm w-full ${errors.facilitybranch_id ? 'border-red-500' : ''}`}
+                            >
+                                <option value="">Select Branch</option>
+                                {Array.isArray(facilityBranches) && facilityBranches.map(branch => (
+                                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                ))}
+                            </select>                        
+                        </div>
+
                         <div className="relative flex items-center">
                             <FontAwesomeIcon icon={faSearch} className="absolute left-3 text-gray-500" />
                             <input
@@ -58,11 +72,9 @@ export default function Index({ auth, loans, filters }) {
                                 placeholder="Search by customer name"
                                 value={data.search}
                                 onChange={handleSearchChange}
-                                className={`pl-10 border px-2 py-1 rounded text-sm ${errors.search ? "border-red-500" : ""
-                                    }`}
+                                className={`pl-10 border px-2 py-1 rounded text-sm ${errors.search ? "border-red-500" : ""}`}
                             />
                         </div>
-
 
                         <Link
                             href={route("loan0.create")}
@@ -73,25 +85,22 @@ export default function Index({ auth, loans, filters }) {
                     </div>
 
                     <ul className="flex space-x-2 mt-2">
+                        <li
+                            className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"}`}
+                            onClick={() => handleStageChange("")}
+                        >
+                            All
+                        </li>
 
                         {Object.entries(loanStageLabels).map(([key, label]) => (
                             <li
                                 key={key}
-                                className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === key ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-                                    }`}
+                                className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === key ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"}`}
                                 onClick={() => handleStageChange(key)}
                             >
                                 {label}
                             </li>
                         ))}
-
-                        <li
-                            className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-                                }`}
-                            onClick={() => handleStageChange("")}
-                        >
-                            All
-                        </li>
                     </ul>
                 </div>
 
@@ -119,7 +128,7 @@ export default function Index({ auth, loans, filters }) {
                                                 maximumFractionDigits: 2,
                                             })}
                                         </td>
-                                        <td className="border-b p-3 text-gray-700  text-right">
+                                        <td className="border-b p-3 text-gray-700 text-right">
                                             {parseFloat(loan.interest_rate).toLocaleString(undefined, {
                                                 minimumFractionDigits: 2,
                                                 maximumFractionDigits: 2,
@@ -138,7 +147,7 @@ export default function Index({ auth, loans, filters }) {
                                                 className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex items-center"
                                             >
                                                 <FontAwesomeIcon icon={faEdit} className="mr-1" />                                              
-                                                {loan.stage === 2 ? "Process" : "Edit"}   
+                                                {loan.stage === 2 ? "Process" : loan.stage === 3 ? "Preview" : "Edit"}
                                             </Link>                                           
                                         </td>
                                     </tr>
@@ -152,7 +161,6 @@ export default function Index({ auth, loans, filters }) {
                     </table>
                 </div>
             </div>
-           
         </AuthenticatedLayout>
     );
 }
