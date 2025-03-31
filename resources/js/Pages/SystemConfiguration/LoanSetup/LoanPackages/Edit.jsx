@@ -23,6 +23,9 @@ export default function Edit({ loanpackage }) {
     });
     const [isSaving, setIsSaving] = useState(false);
 
+    const handleModalConfirm = async () => {           
+        setModalState({ isOpen: false, message: '', isAlert: false});
+      };
 
     const handleModalClose = () => {
         setModalState({ isOpen: false, message: '', isAlert: false });
@@ -145,6 +148,7 @@ export default function Edit({ loanpackage }) {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalConfirm}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

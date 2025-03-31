@@ -3,6 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\CustomerType;
+
+
 
 class CreateBlsCustomersTable extends Migration
 {
@@ -15,7 +18,8 @@ class CreateBlsCustomersTable extends Migration
     {
         Schema::create('bls_customers', function (Blueprint $table) {
             $table->id();
-            $table->enum('customer_type', ['individual', 'company'])->default('individual'); // Indicate if it's an individual or company
+           // Use CustomerType::cases() to get all the customer types
+           $table->enum('customer_type', array_map(fn($type) => $type->value, CustomerType::cases()))->default(CustomerType::INDIVIDUAL->value);
 
             // Individual Customer Fields
             $table->string('first_name')->nullable(); // Required for individuals

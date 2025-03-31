@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\CustomerType;
+
 
 class BLSGuarantor extends Model
 {
@@ -32,4 +34,10 @@ class BLSGuarantor extends Model
     protected $casts = [
         'guarantor_type' => 'string',
     ];
+
+    // Accessor to get the human-readable label
+    public function getGuarantorTypeNameAttribute()
+    {
+        return CustomerType::from($this->guarantor_type)->label();
+    }
 }

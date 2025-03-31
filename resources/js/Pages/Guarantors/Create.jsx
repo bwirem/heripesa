@@ -1,21 +1,20 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head,Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
-import { Inertia } from '@inertiajs/inertia';
 import Modal from '@/Components/CustomModal';
 
-export default function Edit({ customer }) {
-    const { data, setData, put, errors, processing, reset } = useForm({
-        customer_type: customer.customer_type,
-        first_name: customer.first_name || '',
-        other_names: customer.other_names || '',
-        surname: customer.surname || '',
-        company_name: customer.company_name || '',
-        email: customer.email,
-        phone: customer.phone || '',
+export default function Create({customerTypes}) {
+    const { data, setData, post, errors, processing, reset } = useForm({
+        guarantor_type: 'individual', // Default value
+        first_name: '',
+        other_names: '',
+        surname: '',
+        company_name: '',
+        email: '',
+        phone: '',
     });
 
     const [modalState, setModalState] = useState({
@@ -35,14 +34,18 @@ export default function Edit({ customer }) {
     };
 
     const showAlert = (message) => {
-        setModalState({ isOpen: true, message, isAlert: true });
+        setModalState({
+            isOpen: true,
+            message,
+            isAlert: true,
+        });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         setIsSaving(true);
-        put(route('systemconfiguration0.customers.update', customer.id), {
+        post(route('customer2.store'), {
             ...data, // Send all form data
             onSuccess: () => {
                 setIsSaving(false);
@@ -51,43 +54,46 @@ export default function Edit({ customer }) {
             onError: (error) => {
                 console.error(error);
                 setIsSaving(false);
-                showAlert('An error occurred while saving the customer.');
+                showAlert('An error occurred while saving the guarantor.');
             },
         });
     };
 
     const resetForm = () => {
         reset();
-        showAlert('Customer updated successfully!');
+        showAlert('guarantor created successfully!');
     };
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Edit Customer</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">New Guarantor</h2>}
         >
-            <Head title="Edit Customer" />
+            <Head title="New Guarantor" />
             <div className="py-12">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="bg-white p-6 shadow sm:rounded-lg">
                         <form onSubmit={handleSubmit} className="space-y-6">
 
-                            {/* Customer Type */}
+                            {/* guarantor Type */}
                             <div>
-                                <label htmlFor="customer_type" className="block text-sm font-medium text-gray-700">Customer Type</label>
+                                <label htmlFor="guarantor_type" className="block text-sm font-medium text-gray-700">Guarantor Type</label>
                                 <select
-                                    id="customer_type"
-                                    value={data.customer_type}
-                                    onChange={(e) => setData('customer_type', e.target.value)}
+                                    id="guarantor_type"
+                                    value={data.guarantor_type}
+                                    onChange={(e) => setData('guarantor_type', e.target.value)}
                                     className="w-full border p-2 rounded text-sm"
                                 >
-                                    <option value="individual">Individual</option>
-                                    <option value="company">Company</option>
+                                    {customerTypes.map((type) => (
+                                        <option key={type.value} value={type.value}>
+                                            {type.label}
+                                        </option>
+                                    ))}
                                 </select>
-                                {errors.customer_type && <p className="text-sm text-red-600">{errors.customer_type}</p>}
+                                {errors.guarantor_type && <p className="text-sm text-red-600">{errors.guarantor_type}</p>}
                             </div>
 
-                            {/* Individual Customer Fields */}
-                            {data.customer_type === 'individual' && (
+                            {/* Individual guarantor Fields */}
+                            {data.guarantor_type === 'individual' && (
                                 <div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
@@ -127,10 +133,25 @@ export default function Edit({ customer }) {
                                 </div>
                             )}
 
-                            {/* Company Customer Fields */}
-                            {data.customer_type === 'company' && (
+                            {/* Company guarantor Fields */}
+                            {data.guarantor_type === 'company' && (
                                 <div>
                                     <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">Company Name</label>
+                                    <input
+                                        type="text"
+                                        id="company_name"
+                                        value={data.company_name}
+                                        onChange={(e) => setData('company_name', e.target.value)}
+                                        className={`w-full border p-2 rounded text-sm ${errors.company_name ? 'border-red-500' : ''}`}
+                                    />
+                                    {errors.company_name && <p className="text-sm text-red-600">{errors.company_name}</p>}
+                                </div>
+                            )}
+
+                            {/* Company guarantor Fields */}
+                            {data.guarantor_type === 'group' && (
+                                <div>
+                                    <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">Group Name</label>
                                     <input
                                         type="text"
                                         id="company_name"
@@ -166,15 +187,16 @@ export default function Edit({ customer }) {
                                 {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
                             </div>
 
-                            <div className="flex justify-end space-x-4 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => Inertia.get(route('systemconfiguration0.customers.index'))}
+                            <div className="flex justify-end space-x-4 mt-6">                                
+                                <Link
+                                    href={route('customer2.index')}
+                                    method="get"  // Optional, if you want to define the HTTP method (GET is default)
+                                    preserveState={true}  // Keep the page state (similar to `preserveState: true` in the button)
                                     className="bg-gray-300 text-gray-700 rounded p-2 flex items-center space-x-2"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
-                                </button>
+                                </Link>
                                 <button
                                     type="submit"
                                     disabled={processing || isSaving}

@@ -17,14 +17,7 @@ class Loan extends Model
     protected $table = 'loans';
 
 
-    protected $fillable = [
-        'customer_type',
-        'first_name',
-        'other_names',
-        'surname',
-        'company_name',
-        'email',
-        'phone',
+    protected $fillable = [       
         'customer_id',
         'user_id',
         'loan_type',
@@ -37,7 +30,8 @@ class Loan extends Model
         'stage',
         'application_form',
         'status',
-        'facilitybranch_id'
+        'facilitybranch_id',
+        'submit_remarks'
     ];
 
     /**

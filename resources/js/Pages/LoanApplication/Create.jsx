@@ -4,11 +4,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faSave, faTimesCircle, faFileUpload } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
-import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
-
 import Modal from '../../Components/CustomModal.jsx';
-import InputField from '../../Components/CustomInputField.jsx';
+
 
 // Utility function for debouncing
 const debounce = (func, delay) => {
@@ -19,7 +17,7 @@ const debounce = (func, delay) => {
     };
 };
 
-export default function Create({auth, loanTypes,facilityBranches}) {
+export default function Create({auth, loanTypes,facilityBranches,facilityoption}) {
     // Form state using Inertia's useForm hook
     const { data, setData, post, errors, processing, reset } = useForm({
         customer_type: 'individual', // Default value
@@ -38,7 +36,7 @@ export default function Create({auth, loanTypes,facilityBranches}) {
         monthlyRepayment: 0,
         totalRepayment: 0,
         stage: 1,
-        applicationForm: null, // Add applicationForm to data
+        applicationForm: null,
         facilitybranch_id: auth?.user?.facilitybranch_id || "",
     });
 
@@ -131,6 +129,7 @@ export default function Create({auth, loanTypes,facilityBranches}) {
             },
         });
     };
+    
     // Reset the form
     const resetForm = () => {
         reset();
@@ -266,9 +265,18 @@ export default function Create({auth, loanTypes,facilityBranches}) {
         setData('loanDuration', loanDuration);
     };
 
+    const roundUpToNearest = (value, roundingFactor) => {
+        // Ensure that the value and roundingFactor are numbers
+        if (isNaN(value) || isNaN(roundingFactor) || roundingFactor <= 0) {           
+            return value; // Return original value in case of invalid input
+        }
+    
+        // Round the value up to the nearest roundingFactor
+        return Math.ceil(value / roundingFactor) * roundingFactor;
+    };    
+
     const calculateLoanDetails = (loanAmount, loanDuration, interestRate) => {
-        // Ensure loanAmount and loanDuration are valid numbers
-        console.log('Calculating loan details:', { loanAmount, loanDuration, interestRate }); // Debugging
+        
         if (typeof loanAmount !== 'number' || typeof loanDuration !== 'number' || isNaN(loanAmount) || isNaN(loanDuration) || loanAmount <= 0 || loanDuration <= 0) {
             console.warn('Invalid loan parameters. Setting to 0.');
             setData(prevData => ({
@@ -286,10 +294,13 @@ export default function Create({auth, loanTypes,facilityBranches}) {
         const totalRepayment = loanAmount + interestAmount;
         const monthlyRepayment = totalRepayment / loanDuration;
 
+        const roundedMonthlyRepayment = roundUpToNearest(monthlyRepayment, facilityoption.rounding_factor);
+
+
         setData(prevData => ({
             ...prevData,
             interestAmount: interestAmount,
-            monthlyRepayment: monthlyRepayment,
+            monthlyRepayment: roundedMonthlyRepayment,
             totalRepayment: totalRepayment,
         }));
     };
@@ -314,7 +325,7 @@ export default function Create({auth, loanTypes,facilityBranches}) {
     const handleLoanTypeChange = (e) => {
         const selectedLoanType = loanTypes.find(type => type.id === parseInt(e.target.value)); // Find the selected loan type
         if (selectedLoanType) {
-             console.log('Selected loan type:', selectedLoanType); //Debugging
+           
             setData(prevData => ({
                 ...prevData,
                 loanType: selectedLoanType.id, // Store the ID, not the object
@@ -337,8 +348,7 @@ export default function Create({auth, loanTypes,facilityBranches}) {
     };
 
      useEffect(() => {
-        // Re-calculate loan details whenever loanAmount, loanDuration or interestRate changes
-         console.log('useEffect triggered. Data:', { ...data }); // Debugging
+       
         calculateLoanDetails(
             parseFloat(data.loanAmount), // Ensure number
             parseInt(data.loanDuration, 10), // Ensure integer

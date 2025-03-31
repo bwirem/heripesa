@@ -266,7 +266,7 @@ class UserPermissionController extends Controller
             ],
             'customer' => [
                 ['key' => 'customer0', 'text' => 'Registration', 'icon' => 'customer'],
-                ['key' => 'customer1', 'text' => 'Customer Members', 'icon' => 'person'],
+                ['key' => 'customer1', 'text' => 'Group Members', 'icon' => 'person'],
                 ['key' => 'customer2', 'text' => 'Guarantors', 'icon' => 'person'],
             ],
             'loan' => [

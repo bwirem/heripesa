@@ -16,5 +16,6 @@ class FacilityOption extends Model
     // Add attributes to $fillable array for mass assignment
     protected $fillable = [  
         'name',  
+        'rounding_factor'
     ];
 }

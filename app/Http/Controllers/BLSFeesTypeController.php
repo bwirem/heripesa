@@ -43,7 +43,7 @@ class BLSFeesTypeController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'amount' => 'nullable|numeric|min:0',                  
+            'amount' => 'required|numeric|min:0',                  
         ]);
 
         // // Create the item
@@ -71,7 +71,7 @@ class BLSFeesTypeController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',   
-            'amount' => 'nullable|numeric|min:0',        
+            'amount' => 'required|numeric|min:0',        
         ]);
 
         // Update the item

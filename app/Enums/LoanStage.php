@@ -6,14 +6,17 @@ namespace App\Enums;
     {
         case Draft = 1;
         case Documentation = 2;  
-        case LoanOfficerReview = 3;
-        case ManagerReview = 4;
-        case CommitteeReview = 5;
-        case Approved = 6;
-        case Disbursed = 7;
-        case Rejected = 8;
-        case Repaid = 9;
-        case Defaulted = 10;    
+        case Submission = 3;  
+
+        case LoanOfficerReview = 4;
+        case ManagerReview = 5;
+        case CommitteeReview = 6;
+        case Approved = 7;
+
+        case Disbursed = 8;
+        case Rejected = 9;
+        case Repaid = 10;
+        case Defaulted = 11;    
     
 
 
@@ -22,7 +25,8 @@ namespace App\Enums;
         {
             return match ($value) {
                 self::Draft->value => 'Draft',            
-                self::Documentation->value => 'Documentation',            
+                self::Documentation->value => 'Documentation', 
+                self::Submission->value => 'Submission',           
                 self::LoanOfficerReview->value => 'Loan Officer Review',
                 self::ManagerReview->value => 'Manager Review',
                 self::CommitteeReview->value => 'Committee Review',

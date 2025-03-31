@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BLSCustomer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Enums\CustomerType;
 
 class BLSCustomerController extends Controller
 {
@@ -28,7 +29,7 @@ class BLSCustomerController extends Controller
         // Paginate the results
         $customers = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        return inertia('SystemConfiguration/LoanSetup/Customers/Index', [
+        return inertia('Customers/Index', [
             'customers' => $customers,
             'filters' => $request->only(['search']),
         ]);
@@ -39,7 +40,13 @@ class BLSCustomerController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LoanSetup/Customers/Create');
+        // Get customer types from the enum
+        $customerTypes = CustomerType::cases();
+        $customerTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $customerTypes);
+
+        return inertia('Customers/Create', [
+            'customerTypes' => $customerTypes,
+        ]);
     }
 
     /**
@@ -47,9 +54,9 @@ class BLSCustomerController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate input
+        // Validate input using enum values
         $validated = $request->validate([
-            'customer_type' => 'required|in:individual,company',
+            'customer_type' => ['required', 'in:' . implode(',', CustomerType::values())],
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -59,7 +66,7 @@ class BLSCustomerController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['customer_type'] == 'individual') {
+        if ($validated['customer_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
@@ -73,25 +80,23 @@ class BLSCustomerController extends Controller
                 'surname' => 'sometimes|nullable',
                 'other_names' => 'sometimes|nullable',
             ])->validate();
-
             $validated['first_name'] = null;
             $validated['other_names'] = null;
-            $validated['surname'] = null;
-            // Ensure individual fields are null
+            $validated['surname'] = null; // Ensure individual fields are null
         }
 
         // Create the customer
         BLSCustomer::create($validated);
 
-        return redirect()->route('systemconfiguration0.customers.index')
+        return redirect()->route('customer0.index')
             ->with('success', 'Customer created successfully.');
     }
 
     public function directstore(Request $request)
     {
-        // Validate input
+        // Validate input using enum values
         $validated = $request->validate([
-            'customer_type' => 'required|in:individual,company',
+            'customer_type' => ['required', 'in:' . implode(',', CustomerType::values())],
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -101,13 +106,13 @@ class BLSCustomerController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['customer_type'] == 'individual') {
+        if ($validated['customer_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
                 'company_name' => 'sometimes|nullable',
             ])->validate();
-             $validated['company_name'] = null;  // Ensure company_name is null
+            $validated['company_name'] = null; // Ensure company_name is null
         } else {
             Validator::make($request->all(), [
                 'company_name' => 'required|string|max:255',
@@ -115,9 +120,9 @@ class BLSCustomerController extends Controller
                 'surname' => 'sometimes|nullable',
                 'other_names' => 'sometimes|nullable',
             ])->validate();
-             $validated['first_name'] = null;
-             $validated['other_names'] = null;
-             $validated['surname'] = null; // Ensure individual fields are null
+            $validated['first_name'] = null;
+            $validated['other_names'] = null;
+            $validated['surname'] = null; // Ensure individual fields are null
         }
 
         // Create the customer
@@ -133,7 +138,6 @@ class BLSCustomerController extends Controller
             'company_name' => $customer->company_name,
             'email' => $customer->email,
             'phone' => $customer->phone,
-
         ]);
     }
 
@@ -142,8 +146,12 @@ class BLSCustomerController extends Controller
      */
     public function edit(BLSCustomer $customer)
     {
-        return inertia('SystemConfiguration/LoanSetup/Customers/Edit', [
+        $customerTypes = CustomerType::cases();
+        $customerTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $customerTypes);
+
+        return inertia('Customers/Edit', [
             'customer' => $customer,
+            'customerTypes' => $customerTypes,
         ]);
     }
 
@@ -152,9 +160,9 @@ class BLSCustomerController extends Controller
      */
     public function update(Request $request, BLSCustomer $customer)
     {
-        // Validate input
+        // Validate input using enum values
         $validated = $request->validate([
-            'customer_type' => 'required|in:individual,company',
+            'customer_type' => ['required', 'in:' . implode(',', CustomerType::values())],
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -164,14 +172,13 @@ class BLSCustomerController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['customer_type'] == 'individual') {
+        if ($validated['customer_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
                 'company_name' => 'sometimes|nullable',
             ])->validate();
             $validated['company_name'] = null; // Ensure company_name is null
-
         } else {
             Validator::make($request->all(), [
                 'company_name' => 'required|string|max:255',
@@ -182,13 +189,12 @@ class BLSCustomerController extends Controller
             $validated['first_name'] = null;
             $validated['other_names'] = null;
             $validated['surname'] = null; // Ensure individual fields are null
-
         }
 
         // Update the customer
         $customer->update($validated);
 
-        return redirect()->route('systemconfiguration0.customers.index')
+        return redirect()->route('customer0.index')
             ->with('success', 'Customer updated successfully.');
     }
 
@@ -199,7 +205,7 @@ class BLSCustomerController extends Controller
     {
         $customer->delete();
 
-        return redirect()->route('systemconfiguration0.customers.index')
+        return redirect()->route('customer0.index')
             ->with('success', 'Customer deleted successfully.');
     }
 

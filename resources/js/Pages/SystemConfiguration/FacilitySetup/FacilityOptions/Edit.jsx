@@ -9,6 +9,7 @@ import Modal from '@/Components/CustomModal';
 export default function Edit({ facilityoption }) {
     const { data, setData, put, errors, processing, reset } = useForm({
         name: facilityoption.name,
+        rounding_factor: facilityoption.rounding_factor, 
     });
 
     const [modalState, setModalState] = useState({
@@ -19,6 +20,11 @@ export default function Edit({ facilityoption }) {
     const [isSaving, setIsSaving] = useState(false);
 
     const handleModalClose = () => {
+        setModalState({ isOpen: false, message: '', isAlert: false });
+    };
+
+    const handleModalConfirm = async () => {
+            
         setModalState({ isOpen: false, message: '', isAlert: false });
     };
 
@@ -73,6 +79,19 @@ export default function Edit({ facilityoption }) {
                                     />
                                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                                 </div>
+
+                                <div className="relative flex-1">
+                                    <label htmlFor="rounding_factor" className="block text-sm font-medium text-gray-700 mr-2">Round Factor</label>
+                                    <input
+                                        id="rounding_factor"
+                                        type="number"
+                                        placeholder="Enter Rounding_factor..."
+                                        value={data.rounding_factor}
+                                        onChange={(e) => setData('rounding_factor', e.target.value)}
+                                        className={`w-full border p-2 rounded text-sm ${errors.rounding_factor ? 'border-red-500' : ''}`}
+                                    />
+                                    {errors.rounding_factor && <p className="text-sm text-red-600 mt-1">{errors.rounding_factor}</p>}
+                                </div>   
                             </div>
 
                             <div className="flex justify-end space-x-4 mt-6">
@@ -102,6 +121,7 @@ export default function Edit({ facilityoption }) {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalConfirm}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

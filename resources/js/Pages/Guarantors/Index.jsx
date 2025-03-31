@@ -7,7 +7,7 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 
 import Modal from '@/Components/CustomModal';
 
-export default function Index({ auth, customers, filters }) {
+export default function Index({ auth, guarantors, filters }) {
     const { data, setData, get, errors } = useForm({
         search: filters.search || "",
     });
@@ -16,11 +16,11 @@ export default function Index({ auth, customers, filters }) {
         isOpen: false,
         message: '',
         isAlert: false,
-        customerToDeleteId: null,
+        guarantorToDeleteId: null,
     });
 
     useEffect(() => {
-        get(route("systemconfiguration0.customers.index"), { preserveState: true });
+        get(route("customer2.index"), { preserveState: true });
     }, [data.search, get]);
 
 
@@ -32,24 +32,24 @@ export default function Index({ auth, customers, filters }) {
     const handleDelete = (id) => {
         setModalState({
             isOpen: true,
-            message: "Are you sure you want to delete this customer?",
+            message: "Are you sure you want to delete this guarantor?",
             isAlert: false,
-            customerToDeleteId: id,
+            guarantorToDeleteId: id,
         });
     };
 
     const handleModalClose = () => {
-        setModalState({ isOpen: false, message: '', isAlert: false, customerToDeleteId: null });
+        setModalState({ isOpen: false, message: '', isAlert: false, guarantorToDeleteId: null });
     };
 
     const handleModalConfirm = async () => {
         try {
-            await router.delete(route("systemconfiguration0.customers.destroy", modalState.customerToDeleteId));
+            await router.delete(route("customer2.destroy", modalState.guarantorToDeleteId));
         } catch (error) {
-            console.error("Failed to delete customer:", error);
-            showAlert("There was an error deleting the customer. Please try again.");
+            console.error("Failed to delete guarantor:", error);
+            showAlert("There was an error deleting the guarantor. Please try again.");
         }
-        setModalState({ isOpen: false, message: '', isAlert: false, customerToDeleteId: null });
+        setModalState({ isOpen: false, message: '', isAlert: false, guarantorToDeleteId: null });
     };
 
     // Show alert modal
@@ -58,16 +58,16 @@ export default function Index({ auth, customers, filters }) {
             isOpen: true,
             message: message,
             isAlert: true,
-            customerToDeleteId: null,
+            guarantorToDeleteId: null,
         });
     };
 
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold text-gray-800">Customer List</h2>}
+            header={<h2 className="text-xl font-semibold text-gray-800">Guarantor List</h2>}
         >
-            <Head title="Customer List" />
+            <Head title="guarantor List" />
             <div className="container mx-auto p-4">
                 {/* Header Actions */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-4">
@@ -87,7 +87,7 @@ export default function Index({ auth, customers, filters }) {
 
 
                         <Link
-                            href={route("systemconfiguration0.customers.create")}
+                            href={route("customer2.create")}
                             className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm flex items-center"
                         >
                             <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create
@@ -96,43 +96,40 @@ export default function Index({ auth, customers, filters }) {
 
                 </div>
 
-                {/* Customers Table */}
+                {/* guarantors Table */}
                 <div className="overflow-x-auto">
                     <table className="min-w-full border border-gray-300 shadow-md rounded">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Type</th>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">First Name</th>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Other Names</th>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Surname</th>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Company</th>
+                                <th className="border-b p-3 text-left font-medium text-gray-700">Guarantor</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Email</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Phone</th>
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {customers.data.length > 0 ? (
-                                customers.data.map((customer, index) => (
-                                    <tr key={customer.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                        <td className="border-b p-3 text-gray-700">{customer.customer_type}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.first_name}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.other_names}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.surname}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.company_name}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.email}</td>
-                                        <td className="border-b p-3 text-gray-700">{customer.phone}</td>
-
+                            {guarantors.data.length > 0 ? (
+                                guarantors.data.map((guarantor, index) => (
+                                    <tr key={guarantor.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                                        <td className="border-b p-3 text-gray-700">
+                                            {guarantor.guarantor_type === 'individual' ? (
+                                                `${guarantor.first_name} ${guarantor.other_names ? guarantor.other_names + ' ' : ''}${guarantor.surname}`
+                                            ) : (
+                                                guarantor.company_name
+                                            )}
+                                        </td>
+                                        <td className="border-b p-3 text-gray-700">{guarantor.email}</td>
+                                        <td className="border-b p-3 text-gray-700">{guarantor.phone}</td>
                                         <td className="border-b p-3 flex space-x-2 justify-center">
                                             <Link
-                                                href={route("systemconfiguration0.customers.edit", customer.id)}
+                                                href={route("customer2.edit", guarantor.id)}
                                                 className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex items-center"
                                             >
                                                 <FontAwesomeIcon icon={faEdit} className="mr-1" />
                                                 Edit
                                             </Link>
                                             <button
-                                                onClick={() => handleDelete(customer.id)}
+                                                onClick={() => handleDelete(guarantor.id)}
                                                 className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs flex items-center"
                                             >
                                                 <FontAwesomeIcon icon={faTrash} className="mr-1" />
@@ -143,12 +140,13 @@ export default function Index({ auth, customers, filters }) {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="border-b p-3 text-center text-gray-700">No Customers found.</td>
+                                    <td colSpan="4" className="border-b p-3 text-center text-gray-700">No Guarantors found.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+                
             </div>
             <Modal
                 isOpen={modalState.isOpen}

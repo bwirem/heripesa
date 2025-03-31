@@ -5,8 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faPlus, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 
-import Modal from '../../Components/CustomModal.jsx';
-
 export default function Index({ auth, loans, facilityBranches, filters }) {
     const { data, setData, get, errors } = useForm({
         search: filters.search || "",        
@@ -109,7 +107,7 @@ export default function Index({ auth, loans, facilityBranches, filters }) {
                     <table className="min-w-full border border-gray-300 shadow-md rounded">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Customer Name</th>
+                                <th className="border-b p-3 text-left font-medium text-gray-700">Customer</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Loan Amount</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Interest Rate</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Total</th>
@@ -121,7 +119,13 @@ export default function Index({ auth, loans, facilityBranches, filters }) {
                             {loans.data.length > 0 ? (
                                 loans.data.map((loan, index) => (
                                     <tr key={loan.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                        <td className="border-b p-3 text-gray-700">{loan.first_name ? loan.first_name : loan.company_name}</td>
+                                        <td className="border-b p-3 text-gray-700">
+                                            {loan.customer.customer_type === 'individual' ? (
+                                                `${loan.customer.first_name} ${loan.customer.other_names ? loan.customer.other_names + ' ' : ''}${loan.customer.surname}`
+                                            ) : (
+                                                loan.customer.company_name
+                                            )}
+                                        </td>
                                         <td className="border-b p-3 text-gray-700 text-right">
                                             {parseFloat(loan.loan_amount).toLocaleString(undefined, {
                                                 minimumFractionDigits: 2,

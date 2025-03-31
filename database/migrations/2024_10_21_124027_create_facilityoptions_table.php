@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('facilityoptions', function (Blueprint $table) {
             $table->id();
-            $table->string('name');             
+            $table->string('name'); 
+            $table->integer('rounding_factor');          
             $table->timestamps();          
         });
     }

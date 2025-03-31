@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\CustomerType;
+
 
 return new class extends Migration
 {
@@ -14,9 +16,10 @@ return new class extends Migration
     public function up()
     {
         Schema::create('bls_guarantors', function (Blueprint $table) {
-            $table->id();
-            $table->enum('guarantor_type', ['individual', 'company'])->default('individual'); // Individual or company guarantor
-            
+            $table->id();           
+            // Use CustomerType::cases() to get all the customer types
+            $table->enum('guarantor_type', array_map(fn($type) => $type->value, CustomerType::cases()))->default(CustomerType::INDIVIDUAL->value);
+
             // Individual Guarantor Fields
             $table->string('first_name')->nullable(); // Required for individuals
             $table->string('other_names')->nullable();

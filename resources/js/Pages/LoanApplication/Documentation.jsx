@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head,Link, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faArrowRight, faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
@@ -21,14 +21,15 @@ const debounce = (func, delay) => {
 
 export default function Documentation({ loan, loanTypes }) {
     // Form state using Inertia's useForm hook
-    const { data, setData, put, errors, processing, reset } = useForm({
-        customer_type: loan.customer_type,
-        first_name: loan.first_name || '',
-        other_names: loan.other_names || '',
-        surname: loan.surname || '',
-        company_name: loan.company_name || '',
-        email: loan.email,
-        phone: loan.phone || '',
+    const { data, setData, post, errors, processing, reset } = useForm({
+        customer_type: loan.customer.customer_type,
+        first_name: loan.customer.first_name || '',
+        other_names: loan.customer.other_names || '',
+        surname: loan.customer.surname || '',
+        company_name: loan.customer.company_name || '',
+        email: loan.customer.email,
+        phone: loan.customer.phone || '',
+
         customer_id: loan.customer_id,
         loanType: loan.loan_type || '',
         loanAmount: loan.loan_amount,
@@ -75,11 +76,7 @@ export default function Documentation({ loan, loanTypes }) {
     });
 
     // Saving state
-    const [isSaving, setIsSaving] = useState(false); 
-    const [submitModalOpen, setSubmitModalOpen] = useState(false); 
-    const [submitRemarks, setSubmitRemarks] = useState(''); // State for the remarks
-    const [remarksError, setRemarksError] = useState(''); // State to display remarks error
-
+    const [isSaving, setIsSaving] = useState(false);     
 
     const fetchGuarantors = useCallback((query) => {
         if (!query.trim()) {
@@ -279,6 +276,12 @@ export default function Documentation({ loan, loanTypes }) {
     
         const formData = new FormData();
         formData.append('stage', data.stage || '');
+
+        if (!data.guarantors || data.guarantors.length === 0) {
+            showAlert('No guarantors provided.');
+            setIsSaving(false);
+            return;
+        }        
     
         let hasFile = false; // Track if at least one file is attached
            
@@ -301,32 +304,19 @@ export default function Documentation({ loan, loanTypes }) {
             return;
         }       
     
-        try {
-            const response = await axios.post(route('loan0.documentation', loan.id), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-    
-            setIsSaving(false);            
-            showAlert(response.data.message);
-
-            setTimeout(() => {  // Introduce a short delay
+        
+        // Use Inertia's put method directly
+        post(route('loan0.next', loan.id), formData, {
+            forceFormData: true, // Ensure Inertia uses FormData when files are present
+            onSuccess: () => {
+                setIsSaving(false);
                 resetForm();
-            }, 100); // Adjust the timeout as needed
-                
-    
-        } catch (error) {
-            setIsSaving(false);
-            console.error('Full error object:', error);
-            if (error.response && error.response.data) {
-                console.error('Error data:', error.response.data);
-                setData('errors', error.response.data.errors);
-            } else {
-                console.error("Error updating loan:", error);
-                showAlert('An error occurred while saving the application.');
-            }
-        }
+            },
+            onError: (errors) => {
+                setIsSaving(false);
+                console.error('Submission errors:', errors);
+            },
+        });     
     };    
 
     // Reset the form
@@ -388,75 +378,12 @@ export default function Documentation({ loan, loanTypes }) {
         });
     };
 
-    const handleSubmitClick = () => {
-        if (data.guarantors.length === 0) {
-            showAlert('Please add at least one guarantor before submitting.');
-            return;
-        }
-    
-        if (data.guarantors.some(g => !g.collateral_doc)) {
-            showAlert('Please ensure all guarantors have collateral documents attached.');
-            return;
-        }
-    
-        setSubmitModalOpen(true);
-        setSubmitRemarks('');
-        setRemarksError('');
-    };
-
-   const handleSubmitModalClose = () => {
-       setSubmitModalOpen(false);      
-       setSubmitRemarks(''); // Clear remarks when closing modal
-       setRemarksError(''); // Clear any error
-   };
-
-   const handleSubmitModalConfirm = () => {
- 
-       if (!submitRemarks.trim()) {
-           setRemarksError('Please enter Submit remarks.');
-           return;
-       }
-
-       const submitData = {          
-           remarks: submitRemarks,
-       };
-    
-       // *** Replace this with your actual API call ***
-       axios.post(route('loan0.submit', loan.id), submitData) // Assuming you create a new route
-           .then(response => {
-               console.log("Submit successful:", response);
-               if (response.data && response.data.message) { // Check if message exists
-                   showAlert(response.data.message); // Show message from backend
-               }
-
-               if (response.status === 200) { // Check the status code for success
-                   Inertia.get(route('loan0.index')); // Navigate to procurements0.index
-               } else {
-                 console.error("Submit failed (non-200 status):", response);
-                 showAlert('Submit failed. Please check the console for details.');
-               }
-           })
-           .catch(error => {
-               console.error("Error Submiting Loan:", error);
-
-               let errorMessage = 'Failed to Submit loan. Please try again.';
-               if (error.response && error.response.data && error.response.data.message) {
-                   errorMessage = error.response.data.message;  // Use the backend error message, if available
-               }
-               showAlert(errorMessage); // Show more specific error
-
-           });
-
-       setSubmitModalOpen(false);      
-       setSubmitRemarks(''); // Clear remarks after confirming
-       setRemarksError(''); // Clear error after confirming (or failing)
-   };
     
 return (
     <AuthenticatedLayout
-        header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Submitted Application</h2>}
+        header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Documentation</h2>}
     >
-        <Head title="Submitted Application" />
+        <Head title="Documentation" />
         <div className="py-12">
             <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                 <div className="bg-white p-6 shadow sm:rounded-lg">
@@ -701,24 +628,7 @@ return (
                                     </tbody>
                                 </table>
                             </div>
-                        </section>
-
-                         {/* Stage Selection */}
-                         <section>
-                            <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
-                                Stage
-                            </label>
-                            <select
-                                id="stage"
-                                value={data.stage}
-                                onChange={(e) => setData('stage', e.target.value)}
-                                className={`mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.stage ? 'border-red-500' : ''}`}
-                            >
-                                <option value="1">Draft</option>                                           
-                                <option value="2">Documentation</option>  
-                            </select>
-                            {errors.stage && <p className="text-sm text-red-600 mt-1">{errors.stage}</p>}
-                        </section>
+                        </section>                         
 
                         {/* Submit Button */}
                         <div className="flex justify-end space-x-4 mt-6">
@@ -731,24 +641,26 @@ return (
                                 <FontAwesomeIcon icon={faTimesCircle} />
                                 <span>Cancel</span>
                             </Link>
+
+                            <Link
+                                href={route('loan0.back', loan.id)}  // Using the route for navigation
+                                method="get"  // Optional, if you want to define the HTTP method (GET is default)
+                                preserveState={true}  // Keep the page state (similar to `preserveState: true` in the button)
+                                className="bg-blue-300 text-blue-700 rounded p-2 flex items-center space-x-2"
+                            >
+                                <FontAwesomeIcon icon={faArrowLeft} /> {/* Left arrow icon */}
+                                <span>Back</span>
+                            </Link>
                             
                             <button
                                 type="submit"
                                 disabled={processing || isSaving}
-                                className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
+                                className="bg-green-600 text-white rounded p-2 flex items-center space-x-2"
                             >
-                                <FontAwesomeIcon icon={faSave} />
-                                <span>{isSaving ? 'Saving...' : 'Save'}</span>
-                            </button>
+                                <FontAwesomeIcon icon={faArrowRight} /> {/* Right arrow icon */}
+                                <span>{isSaving ? 'Saving...' : 'Next'}</span>
+                            </button>  
 
-                            <button
-                                type="button"
-                                onClick={handleSubmitClick}
-                                className="bg-green-500 text-white rounded p-2 flex items-center space-x-2 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-                            >
-                                <FontAwesomeIcon icon={faCheck} />
-                                <span>Submit</span>
-                            </button>
                         </div>
                     </form>
                 </div>
@@ -863,42 +775,7 @@ return (
             title={modalState.isAlert ? "Alert" : "Confirm Action"}
             message={modalState.message}
             isAlert={modalState.isAlert}
-        />
-
-        {/* Submit Confirmation Modal */}
-        <Modal
-                isOpen={submitModalOpen}
-                onClose={handleSubmitModalClose}
-                onConfirm={handleSubmitModalConfirm}
-                title="Submit Confirmation"
-                confirmButtonText="Submit"
-            >
-                <div>
-                    <p>
-                        Are you sure you want to submit the loan to <strong>
-                            {data.customer_type === 'individual' ? (
-                                `${data.first_name} ${data.other_names ? data.other_names + ' ' : ''}${data.surname}`
-                            ) : (
-                                data.company_name
-                            )}
-                        </strong>?
-                    </p>
-
-                    <label htmlFor="Submit_remarks" className="block text-sm font-medium text-gray-700 mt-4">
-                        Submit Remarks:
-                    </label>
-                    <textarea
-                        id="Submit_remarks"
-                        rows="3"
-                        className="mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        value={submitRemarks}
-                        onChange={(e) => setSubmitRemarks(e.target.value)}
-                    />
-                    {remarksError && <p className="text-red-500 text-sm mt-1">{remarksError}</p>}
-                </div>
-        </Modal>
-
-
+        />   
     </AuthenticatedLayout>
 );
 }

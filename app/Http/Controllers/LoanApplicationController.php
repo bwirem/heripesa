@@ -7,6 +7,7 @@ use App\Models\Loan;
 use App\Models\LoanGuarantor;
 use App\Models\BLSPackage;
 use App\Models\FacilityBranch;
+use App\Models\FacilityOption;
 
 use App\Enums\LoanStage; // Or your constants class
 use App\Enums\ApprovalStatus;
@@ -31,11 +32,11 @@ class LoanApplicationController extends Controller
 
         // Search functionality (search customer's name, company name)
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
+            $query->whereHas('customer', function ($q) use ($request) {
                 $q->where('first_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('other_names', 'like', '%' . $request->search . '%')
-                    ->orWhere('surname', 'like', '%' . $request->search . '%')
-                    ->orWhere('company_name', 'like', '%' . $request->search . '%');
+                ->orWhere('other_names', 'like', '%' . $request->search . '%')
+                ->orWhere('surname', 'like', '%' . $request->search . '%')
+                ->orWhere('company_name', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -56,119 +57,71 @@ class LoanApplicationController extends Controller
             'loans' => $loans,
             'facilityBranches' => FacilityBranch::all(),
             'filters' => $request->only(['search', 'stage']),
-            //'auth' => Auth::user(),
         ]);
     }
+
 
     /**
      * Show the form for creating a new loan.
      */
     public function create()
     {
+        $facilityOption = FacilityOption::first();
+
         return inertia('LoanApplication/Create', [          
             'loanTypes' => BLSPackage::all(),
             'facilityBranches' => FacilityBranch::all(),
+            'facilityoption' => $facilityOption ? $facilityOption : null, // Set default value if null
         ]);
     }
+
 
     /**
      * Store a newly created loan in storage.
      */
     
-    public function store(Request $request)
-    {
+    
+     public function store(Request $request)
+     {   
+         $validated = $request->validate($this->validationRules());
+         $mappedData = $this->mapLoanData($validated);
+     
+         // Handle file upload before transaction to prevent orphaned files
+         if ($request->hasFile('applicationForm')) {
+             $path = $request->file('applicationForm')->store('application_forms', 'public');
+             $mappedData['application_form'] = $path;
+         }
+     
+         try {
+             $loan = DB::transaction(fn () => Loan::create($mappedData));
+     
+             return redirect()->route('loan0.edit', ['loan' => $loan->id]);
 
-       
-        // Validate input
-        $validated = $request->validate([
-            'customer_type' => 'required|in:individual,company',
-            'first_name' => 'nullable|string|max:255',
-            'other_names' => 'nullable|string|max:255',
-            'surname' => 'nullable|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:13',
-            'customer_id' => 'nullable|exists:bls_customers,id', // Modified: customer_id can be nullable
-            'loanType' => 'required|exists:bls_packages,id',
-            'loanAmount' => 'required|numeric|min:0',
-            'loanDuration' => 'required|integer|min:1',
-            'interestRate' => 'required|numeric',
-            'interestAmount' => 'required|numeric',
-            'monthlyRepayment' => 'required|numeric',
-            'totalRepayment' => 'required|numeric',
-            'stage' => 'required|integer',
-            'applicationForm' => 'nullable|file|mimes:pdf,doc,docx|max:2048', // Max 
-            'facilitybranch_id' => 'required|integer',
-        ]);
+         } catch (\Exception $e) {
+             // Rollback file if transaction fails
+             if (isset($path)) Storage::disk('public')->delete($path);
+     
+             return back()->withErrors(['error' => 'Loan creation failed. Please try again.']);
+         }
+     }    
+    
 
-        // Map validated data to model attributes
-        $mappedData = [
-            'customer_type' => $validated['customer_type'],
-            'first_name' => $validated['first_name'],
-            'other_names' => $validated['other_names'],
-            'surname' => $validated['surname'],
-            'company_name' => $validated['company_name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'customer_id' => $validated['customer_id'],
-            'loan_type' => $validated['loanType'], // Mapping to model
-            'loan_amount' => $validated['loanAmount'], // Mapping to model
-            'loan_duration' => $validated['loanDuration'], // Mapping to model
-            'interest_rate' => $validated['interestRate'], // Mapping to model
-            'interest_amount' => $validated['interestAmount'],
-            'monthly_repayment' => $validated['monthlyRepayment'], // Mapping to model
-            'total_repayment' => $validated['totalRepayment'], // Mapping to model
-            'stage' => $validated['stage'],
-            'facilitybranch_id' => $validated['facilitybranch_id'],
-            'user_id' => Auth::id(),
-        ];
-
-        // Conditional validation: require either individual or company fields
-        if ($validated['customer_type'] === 'individual') {
-            Validator::make($validated, [
-                'first_name' => 'required|string|max:255',
-                'surname' => 'required|string|max:255',
-                'company_name' => 'nullable',
-            ])->validate();
-
-            $mappedData['company_name'] = null;
-        } else {
-            Validator::make($validated, [
-                'company_name' => 'required|string|max:255',
-                'first_name' => 'nullable',
-                'surname' => 'nullable',
-                'other_names' => 'nullable',
-            ])->validate();
-
-            $mappedData['first_name'] = null;
-            $mappedData['other_names'] = null;
-            $mappedData['surname'] = null;
-        }
-
-        // Handle file upload
-        if ($request->hasFile('applicationForm')) {
-            $path = $request->file('applicationForm')->store('application_forms', 'public');
-            $mappedData['application_form'] = $path;
-        }
-
-        // Create the loan
-        Loan::create($mappedData);
-
-        return redirect()->route('loan0.index')->with('success', 'Loan application created successfully.');
-    }
 
     /**
      * Show the form for editing the specified loan.
      */
     public function edit(Loan $loan)
-    {    
+    { 
+        $loan->load('customer');  
         
         if($loan->stage == 1){
+            $facilityOption = FacilityOption::first();
 
             return inertia('LoanApplication/Edit', [
                 'loan' => $loan,
                 'loanTypes' => BLSPackage::all(),
                 'facilityBranches' => FacilityBranch::all(),
+                'facilityoption' => $facilityOption ? $facilityOption : null, // Set default value if null
             ]);
            
         }else{
@@ -188,11 +141,21 @@ class LoanApplicationController extends Controller
 
                 ];
             });
+
+            if($loan->stage == 2){    
         
             return inertia('LoanApplication/Documentation', [
                 'loan' => $loan,
                 'loanTypes' => BLSPackage::all(),
             ]);
+
+            }else{
+
+                return inertia('LoanApplication/Submission', [
+                    'loan' => $loan,
+                    'loanTypes' => BLSPackage::all(),
+                ]);
+            }
             
         }     
         
@@ -202,103 +165,72 @@ class LoanApplicationController extends Controller
      * Update the specified loan in storage.
      */  
    
-    public function update(Request $request, Loan $loan)
-    {       
-       
-         $rules = [
-            'customer_type' => 'required|in:individual,company',
-            'first_name' => 'nullable|string|max:255',
-            'other_names' => 'nullable|string|max:255',
-            'surname' => 'nullable|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:13',
-            'customer_id' => 'nullable|exists:bls_customers,id',
-            'loanType' => 'required|exists:bls_packages,id',
-            'loanAmount' => 'required|numeric|min:0',
-            'loanDuration' => 'required|integer|min:1',
-            'interestRate' => 'required|numeric',
-            'interestAmount'=> 'required|numeric',
-            'monthlyRepayment' => 'required|numeric',
-            'totalRepayment' => 'required|numeric',
-            'stage' => 'required|integer',
-            'facilitybranch_id' => 'required|integer',
-           
-        ];
+     public function update(Request $request, Loan $loan)
+     {   
+         $validated = $request->validate($this->validationRules());
+         $mappedData = $this->mapLoanData($validated);
+     
+         try {
+             
+            DB::transaction(function () use ($request, $loan, &$mappedData) {
+                $this->handleFileUpload($request, $loan, $mappedData);
+                $loan->update($mappedData);
+            });
+     
+            return redirect()->route('loan0.edit', ['loan' => $loan->id])
+                              ->with('success', 'Loan updated successfully!');
+         } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Loan update failed. Please try again.']);
+         }
+     }
+     
 
-        if (!$loan->application_form){
-             $rules['applicationForm'] = 'required|file|mimes:pdf,doc,docx|max:2048';
-        }
+    /**
+     * Update the specified loan in storage.
+     */  
+    
+    
+     public function next(Request $request, Loan $loan)
+     {   
 
-
-        // Validate input
-        $validated = $request->validate($rules);
-
-        // Map validated data to model attributes
-        $mappedData = [
-            'customer_type' => $validated['customer_type'],
-            'first_name' => $validated['first_name'],
-            'other_names' => $validated['other_names'],
-            'surname' => $validated['surname'],
-            'company_name' => $validated['company_name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'customer_id' => $validated['customer_id'],
-            'loan_type' => $validated['loanType'],
-            'loan_amount' => $validated['loanAmount'],
-            'loan_duration' => $validated['loanDuration'],
-            'interest_rate' => $validated['interestRate'],
-            'interest_amount' => $validated['interestAmount'],
-            'monthly_repayment' => $validated['monthlyRepayment'],
-            'total_repayment' => $validated['totalRepayment'],
-            'stage' => $validated['stage'],
-            'facilitybranch_id' => $validated['facilitybranch_id'],
-            'user_id' => Auth::id(), // Ensure user_id is always updated
-        ];
-
-        // Conditional validation: require either individual or company fields
-        if ($validated['customer_type'] === 'individual') {
-            Validator::make($validated, [
-                'first_name' => 'required|string|max:255',
-                'surname' => 'required|string|max:255',
-                'company_name' => 'nullable',
-            ])->validate();
-
-            $mappedData['company_name'] = null;
-        } else {
-            Validator::make($validated, [
-                'company_name' => 'required|string|max:255',
-                'first_name' => 'nullable',
-                'surname' => 'nullable',
-                'other_names' => 'nullable',
-            ])->validate();
-
-            $mappedData['first_name'] = null;
-            $mappedData['other_names'] = null;
-            $mappedData['surname'] = null;
-        }
-
-        // Handle file upload
-        if ($request->hasFile('applicationForm')) {
-            // Delete old file if it exists
-            if ($loan->application_form) {
-                Storage::disk('public')->delete($loan->application_form);
+        if($loan->stage == 1){
+        
+            $validated = $request->validate($this->validationRules());
+            $mappedData = $this->mapLoanData($validated);        
+            $mappedData['stage'] = $validated['stage'] + 1; 
+            
+            try {
+                DB::transaction(function () use ($request, $loan, &$mappedData) {
+                    $this->handleFileUpload($request, $loan, $mappedData);
+                    $loan->update($mappedData);
+                });
+        
+                return redirect()->route('loan0.edit', ['loan' => $loan->id,'saved' => true])
+                                ->with('success', 'Loan updated successfully!');
+            } catch (\Exception $e) {
+                return back()->withErrors(['error' => 'An error occurred while updating the loan. Please try again.']);
             }
-            $path = $request->file('applicationForm')->store('application_forms', 'public');
-            $mappedData['application_form'] = $path;
         }
+        else if($loan->stage == 2){
 
-        // Update the loan
-        $loan->update($mappedData);
+            $this->documentation($request,$loan);
+        }
+        else if($loan->stage == 3){
 
-        return redirect()->route('loan0.index')->with('success', 'Loan application updated successfully.');
+            $this->submit($request, $loan);
+
+            return redirect()->route('loan0.index')->with('success', 'Loan submitted successfully!');
+
+        }
+       
     }
+     
 
     /**
      * Update the specified loan in storage.
      */    
      
-    public function documentation(Request $request, Loan $loan)
+    private function documentation($request,$loan)
     {
         // Validate request fields
         $validator = Validator::make($request->all(), [
@@ -312,13 +244,11 @@ class LoanApplicationController extends Controller
             'guarantors.*.collateral_doc' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        
 
         DB::transaction(function () use ($request, $loan) {
             // Update loan details
-            $loan->update(['stage' => $request->input('stage')]);
+            $loan->update(['stage' => $request->input('stage') + 1]);
 
             // Fetch existing and updating guarantors
             $existingGuarantors = $loan->loanGuarantors()->pluck('guarantor_id')->toArray();
@@ -387,14 +317,15 @@ class LoanApplicationController extends Controller
             }
         });
 
-        return response()->json(['message' => 'Loan application updated successfully.']);
+        
+        // Redirect to the 'edit' route for the current loan
+        return redirect()->route('loan0.edit', ['loan' => $loan->id]);
+
     } 
    
-    public function submit(Request $request, Loan $loan)
-    {
-
-        //Log::info('Start processing purchase update:', ['purchase' => $loan, 'request_data' => $request->all()]);
-
+    private function submit($request, $loan)
+    {    
+          
         // Validate request fields.
         $validator = Validator::make($request->all(), [
             'remarks' => 'required|string',
@@ -405,6 +336,7 @@ class LoanApplicationController extends Controller
         }
 
         try {
+
             DB::transaction(function () use ($request, $loan) {
                 // Update loan stage to Loan Officer Review using Enum
                 $loan->update([
@@ -418,9 +350,8 @@ class LoanApplicationController extends Controller
                     'status' => ApprovalStatus::Pending->value,
                     'approved_by' => Auth::id(),
                 ]);
-            });
-
-            return response()->json(['message' => 'Loan approved successfully.'], 200);
+            });           
+            
 
         } catch (\Exception $e) {
             Log::error('Error approving loan: ' . $e->getMessage());
@@ -428,61 +359,95 @@ class LoanApplicationController extends Controller
         }
     }
 
-    /**
-     * customerLoans
-     */  
-
-    //  public function customerLoans($customerId)
-    //  {
-    //      try {
-
-    //         $loan = Loan::with('payments') // Eager load payments
-    //         ->where('customer_id', $customerId)
-    //         ->first();
-     
-    //          // Return a JSON response
-    //          if ($loan) {
-    //             $outstandingBalance = $this->calculateOutstandingBalance($loan);  // Call the balance calculation function (see below)
-    //             return response()->json(['loan' => $loan, 'outstandingBalance' => $outstandingBalance]); // Include balance in response
-            
-    //          } else {
-    //              return response()->json(['loan' => null]); // Or an empty object {} if preferred
-    //          }   
-     
-    //      } catch (\Exception $e) {
-    //          \Log::error("Error in customerLoans:", ['error' => $e]);
-    //          return response()->json(['error' => 'Failed to fetch loan details.'], 500);
-    //      }
-    //  }
-
-    //  private function calculateOutstandingBalance(Loan $loan) {
-    //     // Implement your balance calculation logic HERE (server-side).
-    //     // This should match the frontend logic for consistency.
-    //     return $loan->total_repayment - $loan->payments->sum('amount'); // Example using Eloquent's sum()
-    // }
-
-    
-// ... other functions
 
 
-public function customerLoans($customerId)
-{
-    $loan = Loan::with('payments') // Eager load payments
-               ->where('customer_id', $customerId)
-               ->where('stage', 7)
-               ->first();
-
-    if ($loan) {
-        return response()->json([
-            'loan' => $loan,
-            'disburse_date' => $loan->created_at,//$loan->disburse_date, // Assuming you have a disburse_date column on your Loan model            
-        ]);
-    } else {
-        return response()->json(['loan' => null]);
+    private function validationRules(): array
+    {
+        return [
+            'customer_id' => 'nullable|exists:bls_customers,id',
+            'loanType' => 'required|exists:bls_packages,id',
+            'loanAmount' => 'required|numeric|min:0',
+            'loanDuration' => 'required|integer|min:1',
+            'interestRate' => 'required|numeric',
+            'interestAmount' => 'required|numeric',
+            'monthlyRepayment' => 'required|numeric',
+            'totalRepayment' => 'required|numeric',
+            'stage' => 'required|integer',
+            'applicationForm' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'facilitybranch_id' => 'required|exists:facilitybranches,id',
+        ];
     }
-}
 
 
+    private function mapLoanData(array $validated): array
+    {
+        return [
+            'customer_id' => $validated['customer_id'],
+            'loan_type' => $validated['loanType'],
+            'loan_amount' => $validated['loanAmount'],
+            'loan_duration' => $validated['loanDuration'],
+            'interest_rate' => $validated['interestRate'],
+            'interest_amount' => $validated['interestAmount'],
+            'monthly_repayment' => $validated['monthlyRepayment'],
+            'total_repayment' => $validated['totalRepayment'],
+            'stage' => $validated['stage'],
+            'facilitybranch_id' => $validated['facilitybranch_id'],
+            'user_id' => Auth::id(),
+        ];
+    }
+
+     /**
+     * Handle file upload safely.
+     */
+    private function handleFileUpload(Request $request, Loan $loan, array &$mappedData)
+    {
+        if ($request->hasFile('applicationForm')) {
+            $newPath = $request->file('applicationForm')->store('application_forms', 'public');
+
+            // Ensure successful upload before deleting old file
+            if ($newPath) {
+                if ($loan->application_form) {
+                    Storage::disk('public')->delete($loan->application_form);
+                }
+                $mappedData['application_form'] = $newPath;
+            }
+        }
+    }
+
+
+
+    public function back(Loan $loan)
+    { 
+        // Check if the current stage is greater than 0
+        if ($loan->stage > 1) {
+            // Decrease the loan stage by 1
+            $loan->update(['stage' => $loan->stage - 1]);
+        } else {
+            // Optionally, you can log or handle the case where the stage is already 0
+            // Log::warning('Attempted to decrease loan stage below zero for loan ID: ' . $loan->id);
+        }
+    
+        // Redirect to the 'edit' route for the current loan
+        return redirect()->route('loan0.edit', ['loan' => $loan->id]);
+    }    
+
+
+    public function customerLoans($customerId)
+    {
+        $loan = Loan::with('payments') // Eager load payments
+                ->where('customer_id', $customerId)
+                ->where('stage', 8)
+                ->first();
+
+        if ($loan) {
+            return response()->json([
+                'loan' => $loan,
+                'disburse_date' => $loan->created_at,//$loan->disburse_date, // Assuming you have a disburse_date column on your Loan model            
+            ]);
+        } else {
+            return response()->json(['loan' => null]);
+        }
+    }
 
 
     

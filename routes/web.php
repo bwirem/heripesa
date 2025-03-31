@@ -100,11 +100,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/create', [LoanApplicationController::class, 'create'])->name('create');
         Route::post('/', [LoanApplicationController::class, 'store'])->name('store');
         Route::get('/{loan}/edit', [LoanApplicationController::class, 'edit'])->name('edit');
-        Route::put('/{loan}', [LoanApplicationController::class, 'update'])->name('update');
-        Route::put('documentation/{loan}', [LoanApplicationController::class, 'documentation'])->name('documentation');
-        Route::post('submit/{loan}', [LoanApplicationController::class, 'submit'])->name('submit');
-        Route::get('customerLoans/{customerId}', [LoanApplicationController::class, 'customerLoans'])->name('customerLoans'); 
-       
+        Route::post('/{loan}', [LoanApplicationController::class, 'update'])->name('update');
+        Route::post('next/{loan}', [LoanApplicationController::class, 'next'])->name('next');       
+        Route::get('/{loan}/back', [LoanApplicationController::class, 'back'])->name('back');
+        Route::get('customerLoans/{customerId}', [LoanApplicationController::class, 'customerLoans'])->name('customerLoans');        
     });
 
      // Post Bills routes

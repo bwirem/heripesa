@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\CustomerType;
+
+
 
 class BLSCustomer extends Model
 {
@@ -32,6 +35,12 @@ class BLSCustomer extends Model
     protected $casts = [
         'customer_type' => 'string',
     ];
+
+    // Accessor to get the human-readable label
+    public function getCustomerTypeNameAttribute()
+    {
+        return CustomerType::from($this->customer_type)->label();
+    }
 
 
     public function savings()

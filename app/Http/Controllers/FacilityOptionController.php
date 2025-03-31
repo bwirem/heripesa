@@ -43,12 +43,14 @@ class FacilityOptionController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255',            
-        ]);
+            'name' => 'required|string|max:255',   
+            'rounding_factor' => 'required|integer|min:1',       
+        ]);        
 
         // Create the facilityoption
         FacilityOption::create([
-            'name' => $validated['name'],            
+            'name' => $validated['name'],   
+            'rounding_factor' => $validated['rounding_factor'],     
         ]);
 
         return redirect()->route('systemconfiguration5.facilityoptions.index')
@@ -72,12 +74,14 @@ class FacilityOptionController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'name' => 'required|string|max:255',            
+            'name' => 'required|string|max:255',   
+             'rounding_factor' => 'required|integer|min:1',        
         ]);
 
         // Update the facilityoption
         $facilityoption->update([
-            'name' => $validated['name'],            
+            'name' => $validated['name'],
+            'rounding_factor' => $validated['rounding_factor'],         
         ]);
 
         return redirect()->route('systemconfiguration5.facilityoptions.index')

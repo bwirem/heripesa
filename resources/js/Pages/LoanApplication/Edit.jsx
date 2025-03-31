@@ -1,12 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head,Link, useForm } from '@inertiajs/react';
+
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faSave, faTimesCircle, faFileUpload, faTrash, faEye, } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRight,faPlus, faSave, faTimesCircle, faFileUpload, faTrash, faEye, } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
-import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
-
 import Modal from '../../Components/CustomModal.jsx';
 
 // Utility function for debouncing
@@ -18,16 +17,18 @@ const debounce = (func, delay) => {
     };
 };
 
-export default function Edit({auth, loan, loanTypes,facilityBranches }) {
+export default function Edit({auth, loan, loanTypes,facilityBranches,facilityoption }) {
     // Form state using Inertia's useForm hook
-    const { data, setData, put, errors, processing, reset } = useForm({
-        customer_type: loan.customer_type,
-        first_name: loan.first_name || '',
-        other_names: loan.other_names || '',
-        surname: loan.surname || '',
-        company_name: loan.company_name || '',
-        email: loan.email,
-        phone: loan.phone || '',
+    const { data, setData, post, errors, processing, reset } = useForm({
+        
+        customer_type: loan.customer.customer_type,
+        first_name: loan.customer.first_name || '',
+        other_names: loan.customer.other_names || '',
+        surname: loan.customer.surname || '',
+        company_name: loan.customer.company_name || '',
+        email: loan.customer.email,
+        phone: loan.customer.phone || '',
+
         customer_id: loan.customer_id,
         loanType: loan.loan_type || '',
         loanAmount: loan.loan_amount,
@@ -37,12 +38,13 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         monthlyRepayment: loan.monthly_repayment,
         totalRepayment: loan.total_repayment,
         stage: loan.stage,
-        applicationForm: null, // To store NEW file object (if any)
+        applicationForm: null,
         facilitybranch_id: loan.facilitybranch_id || null,
     });
 
     // Customer Search State (Bring back relevant parts from Create.jsx)
-    const [customerSearchQuery, setCustomerSearchQuery] = useState(loan.customer_type === 'company' ? loan.company_name : `${loan.first_name} ${loan.surname}`);
+    //const [customerSearchQuery, setCustomerSearchQuery] = useState(loan.customer.customer_type === 'company' ? loan.customer.company_name : `${loan.customer.first_name} ${loan.customer.surname}`);
+    const [customerSearchQuery, setCustomerSearchQuery] = useState('');
     const [customerSearchResults, setCustomerSearchResults] = useState([]);
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const customerDropdownRef = useRef(null);
@@ -76,7 +78,8 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
     const [isNexting, setIsNexting] = useState(false);
 
     const [filePreviewUrl, setFilePreviewUrl] = useState(null); // Track the URL of file
-    const [applicationFormError, setApplicationFormError] = useState('');
+    const [applicationFormError, setApplicationFormError] = useState('');   
+    
 
     // Fetch Customers dynamically (using Inertia)
     const fetchCustomers = useCallback((query) => {
@@ -108,69 +111,38 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         }
     }, [customerSearchQuery, debouncedCustomerSearch]);
 
-     const handleSubmit = async (e) => {
+
+    const handleSubmit = (e) => {
         e.preventDefault();
-        // Check if applicationForm is null
+    
+        // Validate application form presence
         if (!data.applicationForm && !loan.application_form) {
             setApplicationFormError('Application Form is required.');
             return;
         }
         setApplicationFormError('');
-
-        setIsSaving(true);
+    
+        setIsSaving(true);    
 
         const formData = new FormData();
-
-        // Explicitly append each field from the data object. Important for correct ordering.
-        formData.append('customer_type', data.customer_type || '');
-        formData.append('first_name', data.first_name || '');
-        formData.append('other_names', data.other_names || '');
-        formData.append('surname', data.surname || '');
-        formData.append('company_name', data.company_name || '');
-        formData.append('email', data.email || '');
-        formData.append('phone', data.phone || '');
-        formData.append('customer_id', data.customer_id || '');  //Important to treat as a string or number depending on your backend
-        formData.append('loanType', data.loanType || '');
-        formData.append('loanAmount', parseFloat(data.loanAmount) || 0);
-        formData.append('loanDuration', parseInt(data.loanDuration, 10) || 0);
-        formData.append('interestRate', parseFloat(data.interestRate) || 0);
-        formData.append('interestAmount', parseFloat(data.interestAmount) || 0);
-        formData.append('monthlyRepayment', parseFloat(data.monthlyRepayment) || 0);
-        formData.append('totalRepayment', parseFloat(data.totalRepayment) || 0);
-        formData.append('stage', data.stage || '');
-        formData.append('facilitybranch_id', data.facilitybranch_id || '');      
-
-        // Append the file if it exists.  Crucially, append even if it's `null` to signal no new file.
-        formData.append('applicationForm', data.applicationForm);
-
-        formData.append('_method', 'PUT'); // Method Spoofing
-
-        try {
-            const response = await axios.post(route('loan0.update', loan.id), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            setIsSaving(false);
-            resetForm();
-
-             //Manually redirect since it is a success
-             window.location.href = route('loan0.index');
-
-        } catch (error) {
-            setIsSaving(false);
-              console.error('Full error object:', error);  // Log the entire error for inspection
-
-            if (error.response && error.response.data) {
-                console.error('Error data:', error.response.data);
-                setData('errors', error.response.data.errors);
-            } else {
-                console.error("Error updating loan:", error);
-                showAlert('An error occurred while saving the application.');
-            }
+        for (const key in data) {
+            formData.append(key, data[key]);
         }
+           
+        // Use Inertia's put method directly
+        post(route('loan0.update', loan.id), formData, {
+            forceFormData: true, // Ensure Inertia uses FormData when files are present
+            onSuccess: () => {
+                setIsSaving(false);
+                resetForm();
+            },
+            onError: (errors) => {
+                setIsSaving(false);
+                console.error('Submission errors:', errors);
+            },
+        });
     };
+    
 
     const handleNext = async (e) => {
         //e.preventDefault();
@@ -181,59 +153,26 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         }
         setApplicationFormError('');
 
-        setIsNexting(true);
-
+        setIsNexting(true);   
+       
         const formData = new FormData();
-
-        // Explicitly append each field from the data object. Important for correct ordering.
-        formData.append('customer_type', data.customer_type || '');
-        formData.append('first_name', data.first_name || '');
-        formData.append('other_names', data.other_names || '');
-        formData.append('surname', data.surname || '');
-        formData.append('company_name', data.company_name || '');
-        formData.append('email', data.email || '');
-        formData.append('phone', data.phone || '');
-        formData.append('customer_id', data.customer_id || '');  //Important to treat as a string or number depending on your backend
-        formData.append('loanType', data.loanType || '');
-        formData.append('loanAmount', parseFloat(data.loanAmount) || 0);
-        formData.append('loanDuration', parseInt(data.loanDuration, 10) || 0);
-        formData.append('interestRate', parseFloat(data.interestRate) || 0);
-        formData.append('interestAmount', parseFloat(data.interestAmount) || 0);
-        formData.append('monthlyRepayment', parseFloat(data.monthlyRepayment) || 0);
-        formData.append('totalRepayment', parseFloat(data.totalRepayment) || 0);
-        formData.append('stage',2);
-        formData.append('facilitybranch_id', data.facilitybranch_id || '');
-
-        // Append the file if it exists.  Crucially, append even if it's `null` to signal no new file.
-        formData.append('applicationForm', data.applicationForm);
-
-        formData.append('_method', 'PUT'); // Method Spoofing
-
-        try {
-            const response = await axios.post(route('loan0.update', loan.id), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            setIsNexting(false);
-            resetForm();
-
-             //Manually redirect since it is a success
-             window.location.href = route('loan0.index');
-
-        } catch (error) {
-            setIsNexting(false);
-              console.error('Full error object:', error);  // Log the entire error for inspection
-
-            if (error.response && error.response.data) {
-                console.error('Error data:', error.response.data);
-                setData('errors', error.response.data.errors);
-            } else {
-                console.error("Error updating loan:", error);
-                showAlert('An error occurred while saving the application.');
-            }
+        for (const key in data) {
+            formData.append(key, data[key]);
         }
+           
+        // Use Inertia's put method directly
+        post(route('loan0.next', loan.id), formData, {
+            forceFormData: true, // Ensure Inertia uses FormData when files are present
+            onSuccess: () => {
+                setIsNexting(false);
+                resetForm();
+            },
+            onError: (errors) => {
+                setIsNexting(false);
+                console.error('Submission errors:', errors);
+            },
+        });     
+        
     };
 
     // Reset the form
@@ -369,10 +308,20 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         setData('loanDuration', loanDuration);
     };
 
+    const roundUpToNearest = (value, roundingFactor) => {
+        // Ensure that the value and roundingFactor are numbers
+        if (isNaN(value) || isNaN(roundingFactor) || roundingFactor <= 0) {           
+            return value; // Return original value in case of invalid input
+        }
+    
+        // Round the value up to the nearest roundingFactor
+        return Math.ceil(value / roundingFactor) * roundingFactor;
+    };  
+
     const calculateLoanDetails = (loanAmount, loanDuration, interestRate) => {
        
         if (typeof loanAmount !== 'number' || typeof loanDuration !== 'number' || isNaN(loanAmount) || isNaN(loanDuration) || loanAmount <= 0 || loanDuration <= 0) {
-            console.warn('Invalid loan parameters. Setting to 0.');
+            
             setData(prevData => ({
                 ...prevData,
                 interestAmount: 0,
@@ -388,12 +337,12 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         const totalRepayment = loanAmount + interestAmount;
         const monthlyRepayment = totalRepayment / loanDuration;
 
-        console.log('Calculation results:', { interestAmount, monthlyRepayment, totalRepayment }); // Debugging
+        const roundedMonthlyRepayment = roundUpToNearest(monthlyRepayment, facilityoption.rounding_factor);
 
         setData(prevData => ({
             ...prevData,
             interestAmount: interestAmount,
-            monthlyRepayment: monthlyRepayment,
+            monthlyRepayment: roundedMonthlyRepayment,
             totalRepayment: totalRepayment,
         }));
     };
@@ -418,7 +367,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
     const handleLoanTypeChange = (e) => {
         const selectedLoanType = loanTypes.find(type => type.id === parseInt(e.target.value)); // Find the selected loan type
         if (selectedLoanType) {
-            console.log('Selected loan type:', selectedLoanType); //Debugging
+           
             setData(prevData => ({
                 ...prevData,
                 loanType: selectedLoanType.id, // Store the ID, not the object
@@ -438,27 +387,12 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         }
     };
 
-     const handleApplicationFormChange = (e) => {
-        const file = e.target.files[0]; // Get the file object
-        setData('applicationForm', file);
-
-        if (file) {
-            setApplicationFormError('');
-            // const reader = new FileReader();
-            // reader.onloadend = () => {
-            //     setFilePreviewUrl(reader.result);
-            // };
-            // reader.readAsDataURL(file);
-        } else {
-            setData('applicationForm', null);
-            // setFilePreviewUrl(null);
-        }
-        
+    const handleApplicationFormChange = (e) => {
+        setData('applicationForm', e.target.files[0]); // Store the file object
     };
 
     useEffect(() => {
-        // Re-calculate loan details whenever loanAmount, loanDuration or interestRate changes
-        console.log('useEffect triggered. Data:', { ...data }); // Debugging
+       
         calculateLoanDetails(
             parseFloat(data.loanAmount), // Ensure number
             parseInt(data.loanDuration, 10), // Ensure integer
@@ -473,6 +407,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
         }
     }, [loan.application_form]);
 
+    
     return (
         <AuthenticatedLayout
             header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Edit Application</h2>}
@@ -772,11 +707,12 @@ export default function Edit({auth, loan, loanTypes,facilityBranches }) {
                                     type="button"
                                     onClick={() => handleNext()} // Handle next action
                                     disabled={processing || isNexting}
-                                    className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
+                                    className="bg-green-600 text-white rounded p-2 flex items-center space-x-2"
                                 >
-                                    <FontAwesomeIcon icon={faSave} />
+                                    <FontAwesomeIcon icon={faArrowRight} /> {/* Right arrow icon */}
                                     <span>{isNexting ? 'Nexting...' : 'Next'}</span>
                                 </button>
+
                             </div>
                         </form>
                     </div>

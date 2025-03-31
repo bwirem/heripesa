@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BLSGuarantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Enums\CustomerType; // Import the enum
 
 class BLSGuarantorController extends Controller
 {
@@ -28,7 +29,7 @@ class BLSGuarantorController extends Controller
         // Paginate the results
         $guarantors = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        return inertia('SystemConfiguration/LoanSetup/Guarantors/Index', [
+        return inertia('Guarantors/Index', [
             'guarantors' => $guarantors,
             'filters' => $request->only(['search']),
         ]);
@@ -39,7 +40,11 @@ class BLSGuarantorController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LoanSetup/Guarantors/Create');
+        $customerTypes = CustomerType::cases();
+        $customerTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $customerTypes);
+        return inertia('Guarantors/Create', [
+            'customerTypes' => $customerTypes,
+        ]);
     }
 
     /**
@@ -49,7 +54,7 @@ class BLSGuarantorController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'guarantor_type' => 'required|in:individual,company',
+            'guarantor_type' => 'required|in:' . implode(',', CustomerType::values()), // Use the enum values
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -59,7 +64,7 @@ class BLSGuarantorController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['guarantor_type'] == 'individual') {
+        if ($validated['guarantor_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
@@ -73,17 +78,15 @@ class BLSGuarantorController extends Controller
                 'surname' => 'sometimes|nullable',
                 'other_names' => 'sometimes|nullable',
             ])->validate();
-
             $validated['first_name'] = null;
             $validated['other_names'] = null;
-            $validated['surname'] = null;
-            // Ensure individual fields are null
+            $validated['surname'] = null; // Ensure individual fields are null
         }
 
         // Create the guarantor
         BLSGuarantor::create($validated);
 
-        return redirect()->route('systemconfiguration0.guarantors.index')
+        return redirect()->route('customer2.index')
             ->with('success', 'Guarantor created successfully.');
     }
 
@@ -91,7 +94,7 @@ class BLSGuarantorController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'guarantor_type' => 'required|in:individual,company',
+            'guarantor_type' => 'required|in:' . implode(',', CustomerType::values()), // Use the enum values
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -101,7 +104,7 @@ class BLSGuarantorController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['guarantor_type'] == 'individual') {
+        if ($validated['guarantor_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
@@ -133,7 +136,6 @@ class BLSGuarantorController extends Controller
             'company_name' => $guarantor->company_name,
             'email' => $guarantor->email,
             'phone' => $guarantor->phone,
-
         ]);
     }
 
@@ -142,8 +144,11 @@ class BLSGuarantorController extends Controller
      */
     public function edit(BLSGuarantor $guarantor)
     {
-        return inertia('SystemConfiguration/LoanSetup/Guarantors/Edit', [
+        $customerTypes = CustomerType::cases();
+        $customerTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $customerTypes);
+        return inertia('Guarantors/Edit', [
             'guarantor' => $guarantor,
+            'customerTypes' => $customerTypes,
         ]);
     }
 
@@ -154,7 +159,7 @@ class BLSGuarantorController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'guarantor_type' => 'required|in:individual,company',
+            'guarantor_type' => 'required|in:' . implode(',', CustomerType::values()), // Use the enum values
             'first_name' => 'nullable|string|max:255',
             'other_names' => 'nullable|string|max:255',
             'surname' => 'nullable|string|max:255',
@@ -164,7 +169,7 @@ class BLSGuarantorController extends Controller
         ]);
 
         // Ensure either individual or company fields are filled, but not both
-        if ($validated['guarantor_type'] == 'individual') {
+        if ($validated['guarantor_type'] == CustomerType::INDIVIDUAL->value) {
             Validator::make($request->all(), [
                 'first_name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
@@ -188,7 +193,7 @@ class BLSGuarantorController extends Controller
         // Update the guarantor
         $guarantor->update($validated);
 
-        return redirect()->route('systemconfiguration0.guarantors.index')
+        return redirect()->route('customer2.index')
             ->with('success', 'Guarantor updated successfully.');
     }
 
@@ -199,43 +204,28 @@ class BLSGuarantorController extends Controller
     {
         $guarantor->delete();
 
-        return redirect()->route('systemconfiguration0.guarantors.index')
+        return redirect()->route('customer2.index')
             ->with('success', 'Guarantor deleted successfully.');
     }
 
     /**
      * Search for guarantors based on query.
      */
-    // public function search(Request $request)
-    // {
-    //     $query = $request->input('query');
-    //     $guarantors = BLSGuarantor::where('first_name', 'like', '%' . $query . '%')
-    //         ->orWhere('other_names', 'like', '%' . $query . '%')
-    //         ->orWhere('surname', 'like', '%' . $query . '%')
-    //         ->orWhere('company_name', 'like', '%' . $query . '%')
-    //         ->get();
-
-    //     // Return JSON response instead of an Inertia page
-    //     return response()->json(['guarantors' => $guarantors]);
-    // }
-
-    //GuarantorController
     public function search(Request $request)
     {
         $query = $request->input('query');
 
-        $guarantors = BlsGuarantor::where('guarantor_type', 'individual')
+        $guarantors = BLSGuarantor::where('guarantor_type', CustomerType::INDIVIDUAL->value)
             ->where(function ($individualQuery) use ($query) {
                 $individualQuery->where('first_name', 'like', "%{$query}%")
                     ->orWhere('surname', 'like', "%{$query}%");
             })
             ->orWhere(function ($companyQuery) use ($query) {
-                $companyQuery->where('guarantor_type', 'company')
+                $companyQuery->where('guarantor_type', CustomerType::COMPANY->value)
                     ->where('company_name', 'like', "%{$query}%");
             })
             ->get();
         
         return response()->json(['guarantors' => $guarantors]);
-        //return response()->json($guarantors);
     }
 }

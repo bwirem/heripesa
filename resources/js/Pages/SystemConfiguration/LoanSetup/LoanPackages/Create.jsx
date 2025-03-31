@@ -24,6 +24,10 @@ export default function Create() {
 
 
     // Handlers
+
+    const handleModalConfirm = async () => {           
+      setModalState({ isOpen: false, message: '', isAlert: false});
+    };
     const handleModalClose = () => setModalState({ isOpen: false, message: '', isAlert: false });
     const showAlert = (message) => setModalState({ isOpen: true, message, isAlert: true });
     const resetForm = () => { reset(); showAlert('loanpackage created successfully!'); };
@@ -135,6 +139,7 @@ export default function Create() {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalConfirm}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}
