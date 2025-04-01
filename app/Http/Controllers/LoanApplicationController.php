@@ -113,6 +113,15 @@ class LoanApplicationController extends Controller
     public function edit(Loan $loan)
     { 
         $loan->load('customer');  
+
+        if (request()->wantsJson()) {  //Handle API requests separately
+            return response()->json([
+                'loan' => $loan,
+                'loanTypes' => BLSPackage::all(),
+                'facilityBranches' => FacilityBranch::all(),
+                'facilityoption' => FacilityOption::first(),
+            ]);
+        }
         
         if($loan->stage == 1){
             $facilityOption = FacilityOption::first();
@@ -166,9 +175,10 @@ class LoanApplicationController extends Controller
      */  
    
      public function update(Request $request, Loan $loan)
-     {   
-         $validated = $request->validate($this->validationRules());
-         $mappedData = $this->mapLoanData($validated);
+     {       
+       
+        $validated = $request->validate($this->validationRules());
+        $mappedData = $this->mapLoanData($validated);
      
          try {
              
@@ -177,8 +187,12 @@ class LoanApplicationController extends Controller
                 $loan->update($mappedData);
             });
      
-            return redirect()->route('loan0.edit', ['loan' => $loan->id])
-                              ->with('success', 'Loan updated successfully!');
+            return response()->json([
+                'success' => true, // Now a boolean
+                'message' => 'Loan updated successfully!',
+            ]);
+            
+                              
          } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Loan update failed. Please try again.']);
          }
@@ -363,7 +377,8 @@ class LoanApplicationController extends Controller
 
     private function validationRules(): array
     {
-        return [
+        // Base validation rules
+        $rules = [
             'customer_id' => 'nullable|exists:bls_customers,id',
             'loanType' => 'required|exists:bls_packages,id',
             'loanAmount' => 'required|numeric|min:0',
@@ -373,9 +388,15 @@ class LoanApplicationController extends Controller
             'monthlyRepayment' => 'required|numeric',
             'totalRepayment' => 'required|numeric',
             'stage' => 'required|integer',
-            'applicationForm' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'facilitybranch_id' => 'required|exists:facilitybranches,id',
         ];
+
+        // Check if applicationForm is present
+        if (request()->file('applicationForm') !== null) {
+            $rules['applicationForm'] = 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048';
+        }
+
+        return $rules;
     }
 
 
@@ -404,13 +425,23 @@ class LoanApplicationController extends Controller
         if ($request->hasFile('applicationForm')) {
             $newPath = $request->file('applicationForm')->store('application_forms', 'public');
 
-            // Ensure successful upload before deleting old file
-            if ($newPath) {
-                if ($loan->application_form) {
+            if ($newPath) { // Check for successful upload
+                // Delete old file *only* if a new file was successfully uploaded
+                if ($loan->application_form) { 
                     Storage::disk('public')->delete($loan->application_form);
                 }
                 $mappedData['application_form'] = $newPath;
+            } else {
+                // Handle the upload failure (log, throw exception, etc.)
+                Log::error('Application form upload failed.');
+                // Optionally add an error message to mappedData or throw an exception
+                // $mappedData['upload_error'] = 'File upload failed.'; 
+                // or throw new \Exception('File upload failed.');
             }
+
+
+        } else{ //Add check for no new file submitted
+            $mappedData['application_form'] = $loan->application_form; //keep old path
         }
     }
 

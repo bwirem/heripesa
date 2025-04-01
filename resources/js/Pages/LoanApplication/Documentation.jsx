@@ -85,7 +85,7 @@ export default function Documentation({ loan, loanTypes }) {
             return;
         }
     
-        axios.get(route('systemconfiguration0.guarantors.search'), { params: { query } })
+        axios.get(route('customer2.search'), { params: { query } })
             .then((response) => {
                 setGuarantorSearchResults(response.data.guarantors.slice(0, 5)); // Ensure it's accessing the correct data
                 setShowGuarantorDropdown(true);
@@ -194,7 +194,7 @@ export default function Documentation({ loan, loanTypes }) {
     const handleNewGuarantorModalConfirm = async () => {
         setNewGuarantorModalLoading(true);
         try {
-            const response = await axios.post(route('systemconfiguration0.guarantors.directstore'), newGuarantor);
+            const response = await axios.post(route('customer2.directstore'), newGuarantor);
     
             if (response.data && response.data.id) {
 
@@ -345,12 +345,12 @@ export default function Documentation({ loan, loanTypes }) {
         ];
 
         if (file.size > MAX_SIZE) {
-            showAlert('File size exceeds 5MB limit.');
+            showAlert('File size exceeds 2MB limit.');
             return;
         }
 
         if (!allowedTypes.includes(file.type)) {
-            showAlert('Invalid file type. Please upload a PDF or DOC/DOCX file.');
+            showAlert('Invalid file type. Please upload a PDF, DOC/DOCX, or image file (JPEG/PNG).');
             return;
         }
         
@@ -377,6 +377,11 @@ export default function Documentation({ loan, loanTypes }) {
             return { ...prevData, guarantors: updatedGuarantors };
         });
     };
+
+    const Unit = (loanTypeId) => {
+        const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
+        return durationUnit.charAt(0).toUpperCase() + durationUnit.slice(1);
+    }; 
 
     
 return (
@@ -449,7 +454,7 @@ return (
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
-                                    <p className="mt-1 text-sm text-gray-500">{data.loanDuration} Months</p>
+                                    <p className="mt-1 text-sm text-gray-500">{data.loanDuration} {Unit(data.loanType)}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>

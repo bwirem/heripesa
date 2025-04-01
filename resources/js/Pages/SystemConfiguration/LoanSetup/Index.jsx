@@ -100,40 +100,6 @@ export default function Index() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"> 
-                        {/* Customers */}
-                        <div className="bg-white shadow-md rounded-lg p-6">
-                            <div className="flex items-center">
-                                <div className="p-3 bg-blue-500 rounded-full">
-                                    <FontAwesomeIcon icon={faUsers} className="text-white" aria-label="Customers" />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-gray-600">Customers</p>
-                                    <h3 className="text-2xl font-bold">{customerCount}</h3>
-                                    <div className="mt-2">
-                                        <Link href={route('systemconfiguration0.customers.index')} className="text-blue-500 hover:underline">Manage Customers</Link>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Guarantors */}
-                        <div className="bg-white shadow-md rounded-lg p-6">
-                            <div className="flex items-center">
-                                <div className="p-3 bg-blue-500 rounded-full">
-                                    <FontAwesomeIcon icon={faUserCheck} className="text-white" aria-label="Guarantors" />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-gray-600">Guarantors</p>
-                                    <h3 className="text-2xl font-bold">{guarantorCount}</h3>
-                                    <div className="mt-2">
-                                        <Link href={route('systemconfiguration0.guarantors.index')} className="text-blue-500 hover:underline">Manage Guarantors</Link>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </AuthenticatedLayout>

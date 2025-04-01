@@ -39,6 +39,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
         totalRepayment: loan.total_repayment,
         stage: loan.stage,
         applicationForm: null,
+        application_form: loan.application_form,
         facilitybranch_id: loan.facilitybranch_id || null,
     });
 
@@ -88,7 +89,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
             return;
         }
 
-        axios.get(route('systemconfiguration0.customers.search'), { params: { query } })
+        axios.get(route('customer0.search'), { params: { query } })
             .then((response) => {
                 setCustomerSearchResults(response.data.customers.slice(0, 5));
             })
@@ -128,19 +129,44 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
         for (const key in data) {
             formData.append(key, data[key]);
         }
+
+        if (data.applicationForm) { // Check if a file has been selected
+            formData.append('applicationForm', data.applicationForm);
+        }   
+                     
+       
+        axios.post(route('loan0.update', loan.id), formData)
+        .then(response => {
            
-        // Use Inertia's put method directly
-        post(route('loan0.update', loan.id), formData, {
-            forceFormData: true, // Ensure Inertia uses FormData when files are present
-            onSuccess: () => {
-                setIsSaving(false);
-                resetForm();
-            },
-            onError: (errors) => {
-                setIsSaving(false);
-                console.error('Submission errors:', errors);
-            },
+            if (response.data?.success === true) {  // Explicit boolean check
+              
+                // Fetch updated loan data
+                axios.get(route('loan0.edit', loan.id))
+                    .then(response => {
+                       
+                        // Force re-render with the updated loan data
+                        setData(prevData => ({ ...prevData, ...response.data.loan })); 
+
+                        // Reset the form with updated loan data
+                        resetForm(response.data.loan);
+                        setIsSaving(false);
+                    })
+                    .catch(error => {
+                        setIsSaving(false);
+                        console.error("Error fetching updated loan data:", error);
+                    });
+
+            } else {
+                console.error("Unexpected response format:", response.data);
+            }
+        })
+        .catch(error => {
+            setIsSaving(false);
+            console.error("Update Error:", error.response?.data || error.message);
         });
+
+
+
     };
     
 
@@ -176,11 +202,11 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
     };
 
     // Reset the form
-    const resetForm = () => {
-        reset();
-        setCustomerIDError(null);
+    const resetForm = (updatedData) => {
+        reset(updatedData); // Reset form with the updated data
+        setCustomerIDError(null); 
         showAlert('Application updated successfully!');
-    };
+    };    
 
     const handleCustomerSearchChange = (e) => {
         const query = e.target.value;
@@ -265,7 +291,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
     const handleNewCustomerModalConfirm = async () => {
         setNewCustomerModalLoading(true);
         try {
-            const response = await axios.post(route('systemconfiguration0.customers.directstore'), newCustomer);
+            const response = await axios.post(route('customer0.directstore'), newCustomer);
 
             if (response.data && response.data.id) {
                 setData((prevData) => ({
@@ -297,11 +323,19 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
         }
 
     };
-
+    
     const handleLoanAmountChange = (e) => {
-        const loanAmount = parseFloat(e.target.value) || 0;
-        setData('loanAmount', loanAmount);
+        let loanAmount = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+        
+        // Fix decimal precision to match Laravel's casting
+        loanAmount = parseFloat(loanAmount.toFixed(2));
+    
+        setData(prevData => ({
+            ...prevData,
+            loanAmount: loanAmount
+        }));
     };
+    
 
     const handleLoanDurationChange = (e) => {
         const loanDuration = parseInt(e.target.value, 10) || 0;
@@ -337,24 +371,26 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
         const totalRepayment = loanAmount + interestAmount;
         const monthlyRepayment = totalRepayment / loanDuration;
 
-        const roundedMonthlyRepayment = roundUpToNearest(monthlyRepayment, facilityoption.rounding_factor);
+        const roundedMonthlyRepayment = roundUpToNearest(monthlyRepayment, facilityoption.rounding_factor);     
 
         setData(prevData => ({
             ...prevData,
-            interestAmount: interestAmount,
-            monthlyRepayment: roundedMonthlyRepayment,
-            totalRepayment: totalRepayment,
+            interestAmount: parseFloat(interestAmount.toFixed(2)),  // Ensure 2 decimal places
+            monthlyRepayment: parseFloat(roundedMonthlyRepayment.toFixed(2)),
+            totalRepayment: parseFloat(totalRepayment.toFixed(2)),
         }));
     };
 
+ 
     const showAlert = (message) => {
         setModalState({
-            isOpen: false,
+            isOpen: true, // Change this to true to open the modal
             message: message,
-            isAlert: false,
+            isAlert: true, // Set this if you want to distinguish between alert and confirmation
             itemToRemoveIndex: null,
         });
     };
+    
 
     const handleNewCustomerInputChange = (e) => {
         const { id, value } = e.target;
@@ -388,8 +424,38 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
     };
 
     const handleApplicationFormChange = (e) => {
-        setData('applicationForm', e.target.files[0]); // Store the file object
+        const file = e.target.files?.[0]; // Access the selected file
+        if (!file) {
+            setApplicationFormError('No file selected.'); // Handle no file case
+            return;
+        }
+    
+        const MAX_SIZE = 2 * 1024 * 1024; // Maximum file size set to 2MB
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png'
+        ];
+    
+        // Check if the file size exceeds the maximum limit
+        if (file.size > MAX_SIZE) {
+            setApplicationFormError('File size exceeds 2MB limit.');
+            return;
+        }
+    
+        // Check if the file type is allowed
+        if (!allowedTypes.includes(file.type)) {
+            setApplicationFormError('Invalid file type. Please upload a PDF, DOC/DOCX, or image file (JPEG/PNG).');
+            return;
+        }
+    
+        // Store the valid file object and clear any previous error message
+        setData('applicationForm', file);
+        setApplicationFormError(''); // Clear error message
     };
+    
 
     useEffect(() => {
        
@@ -400,13 +466,17 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
         );
     }, [data.loanAmount, data.loanDuration, data.interestRate]);
 
-     useEffect(() => {
+    useEffect(() => {
         // Generate preview when loan.application_form changes (initial load)
         if (loan.application_form) {
             setFilePreviewUrl(`/storage/${loan.application_form}`); // Assuming the URL is directly accessible
         }
     }, [loan.application_form]);
 
+    const Unit = (loanTypeId) => {
+        const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
+        return durationUnit.charAt(0).toUpperCase() + durationUnit.slice(1);
+    };  
     
     return (
         <AuthenticatedLayout
@@ -573,7 +643,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
                                         {errors.loanAmount && <p className="text-sm text-red-600">{errors.loanAmount}</p>}
                                     </div>
                                     <div>
-                                        <label htmlFor="loanDuration" className="block text-sm font-medium text-gray-700">Loan Duration (Months)</label>
+                                        <label htmlFor="loanDuration" className="block text-sm font-medium text-gray-700">Loan Duration ({Unit(data.loanType)})</label>
                                         <input
                                             type="number"
                                             id="loanDuration"
@@ -606,7 +676,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
-                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} Months</p>
+                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} {Unit(data.loanType)}</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>
@@ -639,10 +709,10 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
                             {/* Application Form Display */}
                             <section className="border-b border-gray-200 pb-4">
                                 <h4 className="text-md font-semibold text-gray-700 mb-3">Application Form</h4>
-                                {loan.application_form ? (
+                                {data.application_form ? (
                                     <div className="mt-2">
                                         <a
-                                            href={`/storage/${loan.application_form}`}
+                                            href={`/storage/${data.application_form}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-md font-semibold text-xs uppercase tracking-widest focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50 transition ease-in-out duration-150"
@@ -870,6 +940,7 @@ export default function Edit({auth, loan, loanTypes,facilityBranches,facilityopt
                 message={modalState.message}
                 isAlert={modalState.isAlert}
             />
+            
         </AuthenticatedLayout>
     );
 }

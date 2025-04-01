@@ -232,29 +232,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/search', [BLSPackageController::class, 'search'])->name('search'); 
         });
 
-         // --- customers Routes ---
-         Route::prefix('customers')->name('customers.')->group(function () {
-            Route::get('/', [BLSCustomerController::class, 'index'])->name('index'); 
-            Route::get('/create', [BLSCustomerController::class, 'create'])->name('create'); 
-            Route::post('/', [BLSCustomerController::class, 'store'])->name('store'); 
-            Route::post('/directstore', [BLSCustomerController::class, 'directstore'])->name('directstore');
-            Route::get('/{customer}/edit', [BLSCustomerController::class, 'edit'])->name('edit'); 
-            Route::put('/{customer}', [BLSCustomerController::class, 'update'])->name('update');
-            Route::get('/search', [BLSCustomerController::class, 'search'])->name('search'); 
-        });
-
-        // --- guarantors Routes ---
-        Route::prefix('guarantors')->name('guarantors.')->group(function () {
-            Route::get('/', [BLSGuarantorController::class, 'index'])->name('index'); 
-            Route::get('/create', [BLSGuarantorController::class, 'create'])->name('create'); 
-            Route::post('/', [BLSGuarantorController::class, 'store'])->name('store'); 
-            Route::post('/directstore', [BLSGuarantorController::class, 'directstore'])->name('directstore');
-            Route::get('/{guarantor}/edit', [BLSGuarantorController::class, 'edit'])->name('edit'); 
-            Route::put('/{guarantor}', [BLSGuarantorController::class, 'update'])->name('update');
-            Route::get('/search', [BLSGuarantorController::class, 'search'])->name('search'); 
-        });
-
-
     });
 
     

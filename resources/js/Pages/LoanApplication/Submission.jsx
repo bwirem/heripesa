@@ -103,6 +103,12 @@ export default function Submission({ loan, loanTypes }) {
             },
         });
     };
+
+
+    const Unit = (loanTypeId) => {
+        const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
+        return durationUnit.charAt(0).toUpperCase() + durationUnit.slice(1);
+    }; 
     
 
     return (
@@ -174,7 +180,7 @@ export default function Submission({ loan, loanTypes }) {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
-                                        <p className="mt-1 text-sm text-gray-500">{data.loanDuration} Months</p>
+                                        <p className="mt-1 text-sm text-gray-500">{data.loanDuration} {Unit(data.loanType)}</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>
@@ -243,7 +249,7 @@ export default function Submission({ loan, loanTypes }) {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {guarantorData.guarantor_type === 'company' ? guarantorData.company_name : `${guarantorData.first_name} ${guarantorData.surname}`}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                                                         {guarantorData.collateralDocName}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">

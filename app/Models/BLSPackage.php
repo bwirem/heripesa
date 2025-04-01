@@ -19,6 +19,7 @@ class BLSPackage extends Model
         'interest_type',                   
         'interest_rate',                         
         'duration',
+        'duration_unit',
     ];
   
 }

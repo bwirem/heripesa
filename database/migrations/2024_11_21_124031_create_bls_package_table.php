@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();           
             $table->string('name');
             $table->string('interest_type');
-            $table->decimal('interest_rate', 5, 2);
-            $table->integer('duration'); // Duration in months            
+            $table->decimal('interest_rate', 6, 2); // Increased precision for interest rates
+            $table->integer('duration'); 
+            $table->enum('duration_unit', ['days', 'months', 'years'])->default('months'); // NEW: Unit for duration
             $table->timestamps();
         });
+        
     }
 
 

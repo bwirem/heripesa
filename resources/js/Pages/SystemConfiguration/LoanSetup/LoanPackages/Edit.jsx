@@ -12,6 +12,7 @@ export default function Edit({ loanpackage }) {
     const { data, setData, put, errors, processing, reset } = useForm({
         name: loanpackage.name,
         duration: loanpackage.duration,
+        duration_unit: loanpackage.duration_unit,
         interest_type: loanpackage.interest_type,
         interest_rate: loanpackage.interest_rate,
     });
@@ -67,21 +68,24 @@ export default function Edit({ loanpackage }) {
                     <div className="bg-white p-6 shadow sm:rounded-lg">
                         <form onSubmit={handleSubmit} className="space-y-6">
 
-                            {/* Name and Duration */}
+                             {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Name</label>
+                                <input
+                                    type="text"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    className={`w-full border p-2 rounded text-sm ${errors.name ? 'border-red-500' : ''}`}
+                                    placeholder="Enter name..."
+                                />
+                                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                            </div>
+
+                            {/* Duration & Duration Unit */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Duration */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                                    <input
-                                        type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        className={`w-full border p-2 rounded text-sm ${errors.name ? 'border-red-500' : ''}`}
-                                        placeholder="Enter name..."
-                                    />
-                                    {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Duration (Months)</label>
+                                    <label className="block text-sm font-medium text-gray-700">Duration</label>
                                     <input
                                         type="number"
                                         value={data.duration}
@@ -90,6 +94,21 @@ export default function Edit({ loanpackage }) {
                                         placeholder="Enter duration..."
                                     />
                                     {errors.duration && <p className="text-sm text-red-600">{errors.duration}</p>}
+                                </div>
+
+                                {/* Duration Unit */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Duration Unit</label>
+                                    <select
+                                        value={data.duration_unit}
+                                        onChange={(e) => setData('duration_unit', e.target.value)}
+                                        className="w-full border p-2 rounded text-sm"
+                                    >
+                                        <option value="days">Days</option>
+                                        <option value="months">Months</option>
+                                        <option value="years">Years</option>
+                                    </select>
+                                    {errors.duration_unit && <p className="text-sm text-red-600">{errors.duration_unit}</p>}
                                 </div>
                             </div>
 

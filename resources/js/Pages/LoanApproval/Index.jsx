@@ -28,17 +28,13 @@ export default function Index({ auth, loans,facilityBranches, filters }) {
 
   const renderStageLabel = (stage) => {
     switch (stage) {
-      case 4:
       case 5:
-        return "Reviewed";
-      case 3:
-        return "Pending";
       case 6:
-        return "Approved";
+        return "Reviewed";
+      case 4:
+        return "Pending";
       case 7:
-        return "Rejected";
-      default:
-        return "Unknown";
+        return "Approved";      
     }
   };
 
@@ -92,7 +88,7 @@ export default function Index({ auth, loans,facilityBranches, filters }) {
               className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
                 data.stage === "3" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
               }`}
-              onClick={() => handleStageChange("3")}
+              onClick={() => handleStageChange("4")}
             >
               Pending
             </li>
@@ -100,9 +96,9 @@ export default function Index({ auth, loans,facilityBranches, filters }) {
             <li
               key="reviewed"
               className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "4,5" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
+                data.stage === "5,6" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
               }`}
-              onClick={() => handleStageChange("4,5")}
+              onClick={() => handleStageChange("5,6")}
             >
               Reviewed
             </li>
@@ -112,19 +108,10 @@ export default function Index({ auth, loans,facilityBranches, filters }) {
               className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
                 data.stage === "6" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
               }`}
-              onClick={() => handleStageChange("6")}
-            >
-              Approved
-            </li>
-            <li
-              key="rejected"
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "7" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
               onClick={() => handleStageChange("7")}
             >
-              Rejected
-            </li>            
+              Approved
+            </li>          
           </ul>
         </div>
 
@@ -150,7 +137,14 @@ export default function Index({ auth, loans,facilityBranches, filters }) {
                 })
                 .map((loan, index) => (
                   <tr key={loan.id} className={index % 2 === 0 ? "bg-gray-50" : ""}>
-                    <td className="border-b p-3 text-gray-700">{loan.first_name || loan.company_name}</td>
+                    <td className="border-b p-3 text-gray-700">
+                        {loan.customer.customer_type === 'individual' ? (
+                            `${loan.customer.first_name} ${loan.customer.other_names ? loan.customer.other_names + ' ' : ''}${loan.customer.surname}`
+                        ) : (
+                            loan.customer.company_name
+                        )}
+                    </td>
+
                     <td className="border-b p-3 text-gray-700 text-right">
                       {parseFloat(loan.loan_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>

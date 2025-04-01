@@ -219,6 +219,11 @@ export default function Edit({ loan, loanTypes,paymentTypes }) {
       
         setPaymentType(e.target.value); // Update 
     };
+
+    const Unit = (loanTypeId) => {
+        const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
+        return durationUnit.charAt(0).toUpperCase() + durationUnit.slice(1);
+    }; 
     
 return (
     <AuthenticatedLayout
@@ -291,7 +296,7 @@ return (
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
-                                    <p className="mt-1 text-sm text-gray-500">{data.loanDuration} Months</p>
+                                    <p className="mt-1 text-sm text-gray-500">{data.loanDuration} {Unit(data.loanType)}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>

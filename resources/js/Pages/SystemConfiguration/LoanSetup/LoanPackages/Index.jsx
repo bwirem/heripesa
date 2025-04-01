@@ -109,7 +109,8 @@ export default function Index({ auth, loanpackages, filters }) {
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Name</th>
-                                <th className="border-b p-3 text-left font-medium text-gray-700">Duration (Months)</th>
+                                <th className="border-b p-3 text-left font-medium text-gray-700">Duration</th>
+                                <th className="border-b p-3 text-left font-medium text-gray-700">Unit</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Interest Type</th>
                                 <th className="border-b p-3 text-left font-medium text-gray-700">Interest Rate (%)</th>
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Actions</th>
@@ -121,7 +122,16 @@ export default function Index({ auth, loanpackages, filters }) {
                                     <tr key={loanpackage.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                                         <td className="border-b p-3 text-gray-700">{loanpackage.name ? loanpackage.name : "n/a"}</td>
                                         <td className="border-b p-3 text-gray-700">{loanpackage.duration ? loanpackage.duration : "n/a"}</td>
-                                        <td className="border-b p-3 text-gray-700">{loanpackage.interest_type ? loanpackage.interest_type : "n/a"}</td>
+                                        <td className="border-b p-3 text-gray-700">
+                                            {loanpackage.duration_unit
+                                                ? loanpackage.duration_unit.charAt(0).toUpperCase() + loanpackage.duration_unit.slice(1)
+                                                : "n/a"}
+                                        </td>
+                                        <td className="border-b p-3 text-gray-700">
+                                            {loanpackage.interest_type
+                                                ? loanpackage.interest_type.charAt(0).toUpperCase() + loanpackage.interest_type.slice(1)
+                                                : "n/a"}
+                                        </td>                                        
                                         <td className="border-b p-3 text-gray-700">{loanpackage.interest_rate ? loanpackage.interest_rate : "n/a"}</td>
 
 

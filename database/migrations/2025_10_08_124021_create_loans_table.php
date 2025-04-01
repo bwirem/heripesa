@@ -18,8 +18,9 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('loan_type')->nullable()->constrained('bls_packages')->onDelete('set null'); // Reference to Loan Package
            
-            $table->decimal('loan_amount', 10, 2);
+            $table->decimal('loan_amount', 15, 2); // Increased precision for large amounts
             $table->integer('loan_duration');
+          
             $table->decimal('interest_rate', 5, 2);
             $table->decimal('interest_amount', 10, 2)->default(0); // Amount of interest
             $table->decimal('monthly_repayment', 10, 2)->default(0); // Monthly payment

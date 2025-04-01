@@ -30,14 +30,13 @@ class LoanApprovalController extends Controller
 
         // Search functionality (search customer's name, company name)
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
+            $query->whereHas('customer', function ($q) use ($request) {
                 $q->where('first_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('other_names', 'like', '%' . $request->search . '%')
-                    ->orWhere('surname', 'like', '%' . $request->search . '%')
-                    ->orWhere('company_name', 'like', '%' . $request->search . '%');
+                ->orWhere('other_names', 'like', '%' . $request->search . '%')
+                ->orWhere('surname', 'like', '%' . $request->search . '%')
+                ->orWhere('company_name', 'like', '%' . $request->search . '%');
             });
         }
-
         
         $query->where('stage', '>=', '3'); // This line might be redundant, depending on your requirements
 
@@ -72,7 +71,14 @@ class LoanApprovalController extends Controller
      */
     public function edit(Loan $loan)
     {
-        $loan->load('loanGuarantors.guarantor'); // Eager load the relationship and the guarantor details
+        \Log::info($loan->load('approvals.approver.userGroup')->toArray());
+
+
+        $loan->load('customer'); 
+        $loan->load('loanGuarantors.guarantor'); // Eager load the relationship and the guarantor details       
+        $loan->load('approvals.approver.userGroup');     
+        
+       
 
         $loan->loanGuarantors->transform(function ($loanGuarantor) {
             return [    
@@ -88,21 +94,11 @@ class LoanApprovalController extends Controller
             ];
         });
 
-        switch ($loan->stage) {
-            case 3:
-                return inertia('LoanApproval/Edit', [
-                    'loan' => $loan,
-                    'loanTypes' => BLSPackage::all(),
-                ]);
-            case 4:
-                return inertia('LoanApproval/ManagerReview', [
-                    'loan' => $loan,
-                    'loanTypes' => BLSPackage::all(),
-                ]);
-            default:
-                abort(404, 'Invalid stage');
-        }
-        
+        return inertia('LoanApproval/ManagerReview', [
+            'loan' => $loan,
+            'loanTypes' => BLSPackage::all(),
+        ]);
+           
     }
 
     /**

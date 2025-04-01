@@ -31,6 +31,7 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
         loanType: '',
         loanAmount: 0,
         loanDuration: 0,
+        loanDurationUnit: '',
         interestRate: 0,
         interestAmount: 0,
         monthlyRepayment: 0,
@@ -80,7 +81,7 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
             return;
         }
 
-        axios.get(route('systemconfiguration0.customers.search'), { params: { query } })
+        axios.get(route('customer0.search'), { params: { query } })
             .then((response) => {
                 setCustomerSearchResults(response.data.customers.slice(0, 5));
             })
@@ -222,7 +223,7 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
     const handleNewCustomerModalConfirm = async () => {
         setNewCustomerModalLoading(true);
         try {
-            const response = await axios.post(route('systemconfiguration0.customers.directstore'), newCustomer);
+            const response = await axios.post(route('customer0.directstore'), newCustomer);
 
             if (response.data && response.data.id) {
                 setData((prevData) => ({
@@ -255,14 +256,22 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
 
     };
 
-     const handleLoanAmountChange = (e) => {
-        const loanAmount = parseFloat(e.target.value) || 0;
-        setData('loanAmount', loanAmount);
+    const handleLoanAmountChange = (e) => {
+        let loanAmount = parseFloat(e.target.value.replace(/,/g, '')) || 0;
+        
+        // Fix decimal precision to match Laravel's casting
+        loanAmount = parseFloat(loanAmount.toFixed(2));
+    
+        setData(prevData => ({
+            ...prevData,
+            loanAmount: loanAmount
+        }));
     };
 
     const handleLoanDurationChange = (e) => {
         const loanDuration = parseInt(e.target.value, 10) || 0;
         setData('loanDuration', loanDuration);
+        
     };
 
     const roundUpToNearest = (value, roundingFactor) => {
@@ -299,9 +308,9 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
 
         setData(prevData => ({
             ...prevData,
-            interestAmount: interestAmount,
-            monthlyRepayment: roundedMonthlyRepayment,
-            totalRepayment: totalRepayment,
+            interestAmount: parseFloat(interestAmount.toFixed(2)),  // Ensure 2 decimal places
+            monthlyRepayment: parseFloat(roundedMonthlyRepayment.toFixed(2)),
+            totalRepayment: parseFloat(totalRepayment.toFixed(2)),
         }));
     };
 
@@ -343,9 +352,37 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
             }));
         }
     };
-    const handleApplicationFormChange = (e) => {
-        setData('applicationForm', e.target.files[0]); // Store the file object
+
+   const handleApplicationFormChange = (e) => {
+        // Access the file from the event target
+        const file = e.target.files?.[0]; // Use 'e' instead of 'event'
+        if (!file) return; // Exit if no file is selected
+
+        const MAX_SIZE = 2 * 1024 * 1024; // Maximum file size set to 2MB
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png'
+        ];
+
+        // Check if the file size exceeds the maximum limit
+        if (file.size > MAX_SIZE) {
+            showAlert('File size exceeds 2MB limit.');
+            return;
+        }
+
+        // Check if the file type is allowed
+        if (!allowedTypes.includes(file.type)) {
+            showAlert('Invalid file type. Please upload a PDF, DOC/DOCX, or image file (JPEG/PNG).');
+            return;
+        }
+
+        // Store the valid file object
+        setData('applicationForm', file);
     };
+
 
      useEffect(() => {
        
@@ -356,6 +393,11 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
         );
     }, [data.loanAmount, data.loanDuration, data.interestRate]);
 
+
+    const Unit = (loanTypeId) => {
+        const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
+        return durationUnit.charAt(0).toUpperCase() + durationUnit.slice(1);
+    };    
 
     return (
         <AuthenticatedLayout
@@ -520,7 +562,7 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
                                         {errors.loanAmount && <p className="text-sm text-red-600">{errors.loanAmount}</p>}
                                     </div>
                                     <div>
-                                        <label htmlFor="loanDuration" className="block text-sm font-medium text-gray-700">Loan Duration (Months)</label>
+                                        <label htmlFor="loanDuration" className="block text-sm font-medium text-gray-700">Loan Duration ({Unit(data.loanType)})</label>
                                         <input
                                             type="number"
                                             id="loanDuration"
@@ -553,7 +595,7 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Loan Duration:</label>
-                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} Months</p>
+                                            <p className="mt-1 text-sm text-gray-500">{data.loanDuration || 'N/A'} {Unit(data.loanType)}</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Interest Rate:</label>
