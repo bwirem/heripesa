@@ -36,7 +36,7 @@ export default function Index({ auth, loans, facilityBranches, filters }) {
     const loanStageLabels = {
         1: 'Draft',  
         2: 'Documentation',      
-        3: 'Submitted',            
+        3: 'Submission',            
     };
 
     return (

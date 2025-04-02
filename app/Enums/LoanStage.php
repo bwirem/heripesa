@@ -16,10 +16,7 @@ namespace App\Enums;
         case Disbursed = 8;
         case Rejected = 9;
         case Repaid = 10;
-        case Defaulted = 11;    
-    
-
-
+        case Defaulted = 11;   
 
         public static function getLabel(int $value): string
         {

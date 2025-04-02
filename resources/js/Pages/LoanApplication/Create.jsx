@@ -104,32 +104,53 @@ export default function Create({auth, loanTypes,facilityBranches,facilityoption}
         }
     }, [customerSearchQuery, debouncedCustomerSearch]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-
         setIsSaving(true);
-
-        // Create a FormData object to handle the file upload
-        const formData = new FormData();
-        for (const key in data) {
-            formData.append(key, data[key]);
+    
+        // Ensure a customer is selected
+        if (!data.customer_id) {
+            showAlert("Please search and select a valid customer.");
+            setIsSaving(false);
+            return;
         }
-
-        post(route('loan0.store'), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-            onSuccess: () => {
+    
+        try {
+            // Fetch loan stage for customer
+            const response = await axios.get(route('loan0.stage', { customer_id: data.customer_id }));
+    
+            if (!response.data.allowed) {
+                showAlert(response.data.message);
                 setIsSaving(false);
-                resetForm();
-            },
-            onError: (error) => {
-                console.error(error);
-                setIsSaving(false);
-                showAlert('An error occurred while saving the application.');
-            },
-        });
+                return;
+            }
+    
+            // Proceed with form submission
+            const formData = new FormData();
+            for (const key in data) {
+                formData.append(key, data[key]);
+            }
+    
+            post(route('loan0.store'), formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onSuccess: () => {
+                    setIsSaving(false);
+                    resetForm();
+                },
+                onError: (error) => {
+                    console.error(error);
+                    setIsSaving(false);
+                    showAlert('An error occurred while saving the application.');
+                },
+            });
+            
+        } catch (error) {
+            console.error('Error fetching loan stage:', error);
+            setIsSaving(false);
+            showAlert('Failed to verify customer loan stage.');
+        }
     };
+    
     
     // Reset the form
     const resetForm = () => {

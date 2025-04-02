@@ -30,6 +30,19 @@ class LoanDisbursementController extends Controller
      */
     public function index(Request $request)
     {
+        
+        $user = auth()->user();
+        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
+
+        // If the user has no facility branches, return empty loans
+        if ($facilityBranches->isEmpty()) {
+            return inertia('LoanDisbursement/Index', [
+                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
+                'facilityBranches' => $facilityBranches,
+                'filters' => $request->only(['search', 'stage']),
+            ]);
+        }
+        
         $query = Loan::with(['customer', 'loanPackage', 'user']);
 
         // Search functionality (search customer's name, company name)
@@ -42,7 +55,7 @@ class LoanDisbursementController extends Controller
             });
         }
 
-        $query->where('stage', '>=', '6');
+        $query->where('stage', '>', '6');
 
         // Filtering by stage
         if ($request->filled('stage')) {
@@ -52,10 +65,11 @@ class LoanDisbursementController extends Controller
 
 
         // Only show stages less than or equal to 3
-        $loans = $query->orderBy('created_at', 'desc')->paginate(10);
+        $loans = $query->orderBy('created_at', 'desc')->paginate(10);              
 
         return inertia('LoanDisbursement/Index', [
             'loans' => $loans,
+            'facilityBranches' => $facilityBranches,
             'filters' => $request->only(['search', 'stage']),
         ]);
     }
@@ -66,6 +80,7 @@ class LoanDisbursementController extends Controller
     public function edit(Loan $loan)
     {     
         $loan->load('loanGuarantors.guarantor'); // Eager load the relationship and the guarantor details
+        $loan->load('approvals.approver.userGroup'); 
 
         $loan->loanGuarantors->transform(function ($loanGuarantor) {
             return [    

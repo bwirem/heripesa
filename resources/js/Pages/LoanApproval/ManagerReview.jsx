@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head,Link, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faTimesCircle,faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
@@ -11,7 +11,7 @@ import Modal from '../../Components/CustomModal.jsx';
 
 export default function ManagerReview({ loan, loanTypes }) {
     // Form state using Inertia's useForm hook
-    const { data, setData, put, errors, processing, reset } = useForm({
+    const { data, setData, post, errors, processing, reset } = useForm({
         
         customer_type: loan.customer.customer_type,
         first_name: loan.customer.first_name || '',
@@ -48,6 +48,9 @@ export default function ManagerReview({ loan, loanTypes }) {
     const [approveModalOpen, setApproveModalOpen] = useState(false); 
     const [approveRemarks, setApproveRemarks] = useState(''); // State for the remarks
     const [remarksError, setRemarksError] = useState(''); // State to display remarks error
+
+    const [submitModalLoading, setSubmitModalLoading] = useState(false);
+    const [submitModalSuccess, setSubmitModalSuccess] = useState(false);
     
 
     const showAlert = (message) => {
@@ -86,55 +89,52 @@ export default function ManagerReview({ loan, loanTypes }) {
         setApproveModalOpen(true);
         setApproveRemarks('');
         setRemarksError('');
+        setSubmitModalLoading(false); // Reset loading state
+        setSubmitModalSuccess(false); // Reset success state
     };
 
    const handleApproveModalClose = () => {
        setApproveModalOpen(false);      
        setApproveRemarks(''); // Clear remarks when closing modal
        setRemarksError(''); // Clear any error
+       setSubmitModalLoading(false); // Reset loading state
+       setSubmitModalSuccess(false); // Reset success state
    };
 
    const handleApproveModalConfirm = () => {
  
-       if (!approveRemarks.trim()) {
+       if (!data.remarks) {
            setRemarksError('Please enter Approve remarks.');
            return;
        }
 
-       const approveData = {          
-           remarks: approveRemarks,
-       };
-    
-       // *** Replace this with your actual API call ***
-       axios.post(route('loan1.approve', loan.id), approveData) // Assuming you create a new route
-           .then(response => {
-               console.log("Approve successful:", response);
-               if (response.data && response.data.message) { // Check if message exists
-                   showAlert(response.data.message); // Show message from backend
-               }
+       
+       const formData = new FormData();
+       formData.append('remarks', data.remarks);
 
-               if (response.status === 200) { // Check the status code for success
-                   Inertia.get(route('loan1.index')); // Navigate to procurements0.index
-               } else {
-                 console.error("Approve failed (non-200 status):", response);
-                 showAlert('Approve failed. Please check the console for details.');
-               }
-           })
-           .catch(error => {
-               console.error("Error Approveing Loan:", error);
+        setSubmitModalLoading(true); // Set loading state
 
-               let errorMessage = 'Failed to Approve loan. Please try again.';
-               if (error.response && error.response.data && error.response.data.message) {
-                   errorMessage = error.response.data.message;  // Use the backend error message, if available
-               }
-               showAlert(errorMessage); // Show more specific error
+        post(route('loan1.approve', loan.id), formData, {
+            forceFormData: true,
+            onSuccess: () => {
+                setSubmitModalLoading(false);
+                reset(); // Reset form data
+                setSubmitModalSuccess(true); // Set success state
+                handleApproveModalClose(); // Close the modal on success
+            },
+            onError: (errors) => {
+                setSubmitModalLoading(false);
+                console.error('Submission errors:', errors);
+            },
+        });          
 
-           });
-
-       setApproveModalOpen(false);      
-       setApproveRemarks(''); // Clear remarks after confirming
-       setRemarksError(''); // Clear error after confirming (or failing)
+       
    };
+
+   
+   const handleRejectClick = () => {
+
+   }
 
    const Unit = (loanTypeId) => {
     const durationUnit = loanTypes.find(type => type.id === loanTypeId)?.duration_unit || 'Months';
@@ -333,7 +333,15 @@ export default function ManagerReview({ loan, loanTypes }) {
                                                         {approval.approver?.name || 'N/A'}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {approval.created_at || 'N/A'}
+                                                        {approval.updated_at ? new Intl.DateTimeFormat('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            second: '2-digit',
+                                                            hour12: true
+                                                        }).format(new Date(approval.updated_at)) : 'N/A'}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -352,7 +360,25 @@ export default function ManagerReview({ loan, loanTypes }) {
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                     <span>Cancel</span>
-                                </Link>                           
+                                </Link> 
+
+                                <Link
+                                    href={route('loan1.back', loan.id)}
+                                    className="bg-blue-300 text-blue-700 rounded p-2 flex items-center space-x-2"
+                                >
+                                    <FontAwesomeIcon icon={faArrowLeft} />
+                                    <span>Back</span>
+                                </Link>  
+
+                                <button
+                                    type="button"
+                                    onClick={handleRejectClick}  // Ensure you have a separate function for rejecting
+                                    className="bg-red-500 hover:bg-red-700 text-white rounded px-4 py-2 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                                >
+                                    <FontAwesomeIcon icon={faTimes} /> 
+                                    <span>Reject</span>
+                                </button>       
+                                
                             
                                 <button
                                     type="button"
@@ -383,8 +409,9 @@ export default function ManagerReview({ loan, loanTypes }) {
                     isOpen={approveModalOpen}
                     onClose={handleApproveModalClose}
                     onConfirm={handleApproveModalConfirm}
-                    title="Approve Confirmation"
-                    confirmButtonText="Approve"
+                    title="Approve Confirmation"                  
+                    confirmButtonText={submitModalLoading ? 'Loading...' : (submitModalSuccess ? "Success" : 'Approve')}
+                    confirmButtonDisabled={submitModalLoading || submitModalSuccess}
                 >
                     <div>
                         <p>
@@ -404,8 +431,8 @@ export default function ManagerReview({ loan, loanTypes }) {
                             id="Approve_remarks"
                             rows="3"
                             className="mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            value={approveRemarks}
-                            onChange={(e) => setApproveRemarks(e.target.value)}
+                            value={data.remarks}
+                            onChange={(e) => setData('remarks', e.target.value)}
                         />
                         {remarksError && <p className="text-red-500 text-sm mt-1">{remarksError}</p>}
                     </div>

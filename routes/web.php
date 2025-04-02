@@ -103,7 +103,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/{loan}', [LoanApplicationController::class, 'update'])->name('update');
         Route::post('next/{loan}', [LoanApplicationController::class, 'next'])->name('next');       
         Route::get('/{loan}/back', [LoanApplicationController::class, 'back'])->name('back');
-        Route::get('customerLoans/{customerId}', [LoanApplicationController::class, 'customerLoans'])->name('customerLoans');        
+        Route::get('customerLoans/{customerId}', [LoanApplicationController::class, 'customerLoans'])->name('customerLoans');   
+        
+        // New route to get loan stage
+        Route::get('/customer/{customer_id}', [LoanApplicationController::class, 'getStage'])->name('stage');
+
+
     });
 
      // Post Bills routes
@@ -112,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{loan}/edit', [LoanApprovalController::class, 'edit'])->name('edit');
         Route::put('/{loan}', [LoanApprovalController::class, 'update'])->name('update'); 
         Route::post('approve/{loan}', [LoanApprovalController::class, 'approve'])->name('approve'); 
+        Route::get('/{loan}/back', [LoanDisbursementController::class, 'back'])->name('back');
     });
 
      // Pay Bills routes
@@ -119,7 +125,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [LoanDisbursementController::class, 'index'])->name('index');        
         Route::get('/{loan}/edit', [LoanDisbursementController::class, 'edit'])->name('edit'); 
         Route::post('/disburse/{loan}', [LoanDisbursementController::class, 'disburse'])->name('disburse');  // POST route with no parameter
-    
+        Route::get('/{loan}/back', [LoanDisbursementController::class, 'back'])->name('back');
     });
 
     //routes for Loan Reconciliation (Version 3)

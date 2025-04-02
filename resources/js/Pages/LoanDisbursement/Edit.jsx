@@ -1,8 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm,Link } from '@inertiajs/react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft,faTimesCircle, faEye, faPlus, faTrash, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import axios from 'axios';
@@ -28,7 +28,8 @@ export default function Edit({ loan, loanTypes,paymentTypes }) {
         monthlyRepayment: loan.monthly_repayment,
         totalRepayment: loan.total_repayment,
         stage: loan.stage,
-        guarantors: loan.loan_guarantors || [],  // Array of guarantor details      
+        guarantors: loan.loan_guarantors || [],  // Array of guarantor details
+        approvals: loan.approvals || [],  // Array of approvals details        
     });
 
     
@@ -393,19 +394,45 @@ return (
 
                         {/* Stage Selection */}
                         <section>
-                            <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
-                                Stage
-                            </label>
-                            <select
-                                id="stage"
-                                value={data.stage}
-                                onChange={(e) => setData('stage', e.target.value)}
-                                className={`mt-1 block w-full border-gray-300 rounded shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.stage ? 'border-red-500' : ''}`}
-                            >
-                                <option value="6">Pending</option>                                
-                                <option value="8">Rejected</option>
-                            </select>
-                            {errors.stage && <p className="text-sm text-red-600 mt-1">{errors.stage}</p>}
+                            <h4 className="text-md font-semibold text-gray-700 mb-3">Review Details</h4>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th> 
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>  
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>                                         
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {data.approvals.map((approval, index) => (
+                                            <tr key={index}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {approval.remarks || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {approval.approver?.user_group?.name || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {approval.approver?.name || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {approval.updated_at ? new Intl.DateTimeFormat('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit',
+                                                        hour12: true
+                                                    }).format(new Date(approval.updated_at)) : 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </section>
 
                         {/* Action Buttons */}
@@ -419,14 +446,13 @@ return (
                                 <span>Cancel</span>
                             </button>
 
-                            <button
-                                type="submit"
-                                disabled={processing || isSaving}
-                                className="bg-blue-600 text-white rounded p-2 flex items-center space-x-2"
-                            >
-                                <FontAwesomeIcon icon={faSave} />
-                                <span>{isSaving ? 'Saving...' : 'Save'}</span>
-                            </button>
+                            <Link
+                                    href={route('loan2.back', loan.id)}
+                                    className="bg-blue-300 text-blue-700 rounded p-2 flex items-center space-x-2"
+                                >
+                                    <FontAwesomeIcon icon={faArrowLeft} />
+                                    <span>Back</span>
+                            </Link>
                            
                             <button
                                 type="button"

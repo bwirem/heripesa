@@ -26,6 +26,18 @@ class LoanApprovalController extends Controller
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
+        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
+
+        // If the user has no facility branches, return empty loans
+        if ($facilityBranches->isEmpty()) {
+            return inertia('LoanApproval/Index', [
+                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
+                'facilityBranches' => $facilityBranches,
+                'filters' => $request->only(['search', 'stage']),
+            ]);
+        }
+
         $query = Loan::with(['customer', 'loanPackage', 'user']);
 
         // Search functionality (search customer's name, company name)
@@ -37,31 +49,31 @@ class LoanApprovalController extends Controller
                 ->orWhere('company_name', 'like', '%' . $request->search . '%');
             });
         }
-        
-        $query->where('stage', '>=', '3'); // This line might be redundant, depending on your requirements
+
+        // Enforce stage range (4 to 6)
+        $query->whereBetween('stage', [4, 6]);
 
         // Filtering by stage
         if ($request->filled('stage')) {
-            $stages = explode(',', $request->stage);  // Split the string into an array
+            $stages = explode(',', $request->stage);
 
-            if (count($stages) > 1) { // Check if we need to use whereIn (multiple stages)
+            if (count($stages) > 1) {
                 $query->whereIn('stage', $stages);
             } else {
-                $query->where('stage', $stages[0]); // Single stage
+                $query->where('stage', $stages[0]);
             }
-
         }
 
+        // Filter by facility branch
         if ($request->filled('facilitybranch_id')) {
             $query->where('facilitybranch_id', $request->facilitybranch_id);
         }
 
-        // Only show stages less than or equal to 3
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return inertia('LoanApproval/Index', [
             'loans' => $loans,
-            'facilityBranches' => FacilityBranch::all(),
+            'facilityBranches' => $facilityBranches,
             'filters' => $request->only(['search', 'stage']),
         ]);
     }
@@ -71,13 +83,11 @@ class LoanApprovalController extends Controller
      */
     public function edit(Loan $loan)
     {
-        \Log::info($loan->load('approvals.approver.userGroup')->toArray());
-
+        //\Log::info($loan->load('approvals.approver.userGroup')->toArray());
 
         $loan->load('customer'); 
         $loan->load('loanGuarantors.guarantor'); // Eager load the relationship and the guarantor details       
-        $loan->load('approvals.approver.userGroup');     
-        
+        $loan->load('approvals.approver.userGroup'); 
        
 
         $loan->loanGuarantors->transform(function ($loanGuarantor) {
@@ -126,15 +136,18 @@ class LoanApprovalController extends Controller
             };
     
             $approval = $loan->approvals()->where([
-                'approved_by' => auth()->user()->id,
+                //'approved_by' => auth()->user()->id,
                 'stage' => $currentStage->value,  // Use ->value here
                 'status' => ApprovalStatus::Pending->value // Assuming ApprovalStatus is also an enum
-            ])->firstOrFail();
-    
+            ])->firstOrFail();    
     
     
             // Update the current approval record
-            $approval->update(['status' => ApprovalStatus::Approved->value, 'remarks' => $request->input('remarks')]);
+            $approval->update([
+                'approved_by' => auth()->user()->id,
+                'status' => ApprovalStatus::Approved->value, 
+                'remarks' => $request->input('remarks')
+            ]);
     
             if ($nextStage) {
                 // Update loan stage
@@ -153,7 +166,7 @@ class LoanApprovalController extends Controller
     
         });
     
-        // ...
+        return redirect()->route('loan1.index')->with('success', 'Loan review approved successfully!');
     }
       
    

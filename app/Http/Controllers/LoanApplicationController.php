@@ -28,6 +28,19 @@ class LoanApplicationController extends Controller
      */
     public function index(Request $request)
     {
+
+        $user = auth()->user();
+        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
+
+        // If the user has no facility branches, return empty loans
+        if ($facilityBranches->isEmpty()) {
+            return inertia('LoanApplication/Index', [
+                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
+                'facilityBranches' => $facilityBranches,
+                'filters' => $request->only(['search', 'stage']),
+            ]);
+        }
+
         $query = Loan::with(['customer', 'loanPackage', 'user']);
 
         // Search functionality (search customer's name, company name)
@@ -52,14 +65,49 @@ class LoanApplicationController extends Controller
 
         // Only show stages less than or equal to 3
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
+        $facilityBranches = auth()->user()->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
 
         return inertia('LoanApplication/Index', [
             'loans' => $loans,
-            'facilityBranches' => FacilityBranch::all(),
+            'facilityBranches' => $facilityBranches,            
             'filters' => $request->only(['search', 'stage']),
         ]);
     }
 
+
+    /**
+     * Get the stage of a loan.
+     *
+     * @param  int  $loan
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStage($customer_id)
+    {
+        // Find the most recent loan for the customer
+        $loan = Loan::where('customer_id', $customer_id)->latest()->first();
+
+        // If no loan exists, it means the customer is new
+        if (!$loan) {
+            return response()->json([
+                'allowed' => true, // New customers are allowed to apply
+                'message' => 'This is a new customer. Loan application is allowed.'
+            ]);
+        }
+
+        // If the loan's stage is 10 (Repaid), allow new loan application
+        if ($loan->stage == 10) {
+            return response()->json([
+                'allowed' => true,
+                'message' => 'The customer has fully repaid their previous loan. Loan application is allowed.'
+            ]);
+        }
+
+        // If the loan stage is different than 10 (e.g., unpaid or in-progress), block the new loan application
+        return response()->json([
+            'allowed' => false,
+            'message' => 'This customer has an unpaid loan or an ongoing loan. New applications are not allowed.'
+        ]);
+    }
 
     /**
      * Show the form for creating a new loan.
@@ -337,44 +385,7 @@ class LoanApplicationController extends Controller
 
     } 
    
-    private function submit($request, $loan)
-    {    
-          
-        // Validate request fields.
-        $validator = Validator::make($request->all(), [
-            'remarks' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        try {
-
-            DB::transaction(function () use ($request, $loan) {
-                // Update loan stage to Loan Officer Review using Enum
-                $loan->update([
-                    'stage' => LoanStage::LoanOfficerReview->value,// Enum value for Loan Officer Review
-                    'submit_remarks' => $request->input('remarks')
-                ]);
-
-                // Create approval record for the loan
-                $loan->approvals()->create([
-                    'stage' => LoanStage::LoanOfficerReview->value,
-                    'status' => ApprovalStatus::Pending->value,
-                    'approved_by' => Auth::id(),
-                ]);
-            });           
-            
-
-        } catch (\Exception $e) {
-            Log::error('Error approving loan: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to approve loan. Please try again.'], 500);
-        }
-    }
-
-
-
+   
     private function validationRules(): array
     {
         // Base validation rules
@@ -442,6 +453,44 @@ class LoanApplicationController extends Controller
 
         } else{ //Add check for no new file submitted
             $mappedData['application_form'] = $loan->application_form; //keep old path
+        }
+    }
+
+
+    private function submit($request, $loan)
+    {    
+          
+        // Validate request fields.
+        $validator = Validator::make($request->all(), [
+            'remarks' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+
+            DB::transaction(function () use ($request, $loan) {
+                // Update loan stage to Loan Officer Review using Enum
+                $loan->update([
+                    'stage' => LoanStage::LoanOfficerReview->value,// Enum value for Loan Officer Review
+                    'submit_remarks' => $request->input('remarks')
+                ]);   
+                
+                // Create a new approval record for the next stage
+                $loan->approvals()->create([
+                    'stage' => LoanStage::LoanOfficerReview->value,
+                    'status' => ApprovalStatus::Pending->value,
+                    'approved_by' => auth()->user()->id,
+                    // ... other fields ... (e.g., assigned approver)
+                ]);
+            });           
+            
+
+        } catch (\Exception $e) {
+            Log::error('Error approving loan: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to approve loan. Please try again.'], 500);
         }
     }
 

@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { Head, Link, useForm, router } from "@inertiajs/react";
+import React, { useEffect } from "react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faEdit } from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 
-export default function Index({ auth, loans, filters }) {
+export default function Index({ auth, loans, facilityBranches, filters }) {
   const { data, setData, get, errors } = useForm({
     search: filters.search || "",
-    stage: filters.stage || "6",
+    stage: filters.stage || "",
+    facilitybranch_id: filters.facilitybranch_id || auth?.user?.facilitybranch_id || "",
   });
   
   useEffect(() => {
     get(route("loan2.index"), { preserveState: true });
-  }, [data.search, data.stage]); // Remove `get` from dependencies
+  }, [data.search, data.stage, data.facilitybranch_id]); // Adjust dependencies
 
   const handleSearchChange = (e) => {
     setData("search", e.target.value);
@@ -26,12 +27,10 @@ export default function Index({ auth, loans, filters }) {
 
   const renderStageLabel = (stage) => {
     switch (stage) {     
-      case 6:
-        return "Pending";
       case 7:
-        return "Disbursed";
+        return "Pending";
       case 8:
-        return "Rejected";
+        return "Disbursed";     
       default:
         return "Unknown";
     }
@@ -44,6 +43,21 @@ export default function Index({ auth, loans, filters }) {
         {/* Header Actions */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            {/* Facility Branch Selector */}
+            <div className="relative flex items-center">                                 
+              <select
+                value={data.facilitybranch_id}
+                onChange={(e) => setData('facilitybranch_id', e.target.value)}
+                className={`text-left border px-2 py-1 rounded text-sm w-full ${errors.facilitybranch_id ? 'border-red-500' : ''}`}
+              >
+                <option value="">Select Branch</option>
+                {Array.isArray(facilityBranches) && facilityBranches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>                        
+            </div>
+
+            {/* Search Input */}
             <div className="relative flex items-center">
               <FontAwesomeIcon icon={faSearch} className="absolute left-3 text-gray-500" />
               <input
@@ -58,45 +72,28 @@ export default function Index({ auth, loans, filters }) {
           </div>
 
           <ul className="flex space-x-2 mt-2">
+            <li
+              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"}`}
+              onClick={() => handleStageChange("")}
+            >
+              All
+            </li>
            
             <li
               key="pending"
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "6" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
-              onClick={() => handleStageChange("6")}
+              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === "7" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"}`}
+              onClick={() => handleStageChange("7")}
             >
               Pending
             </li>            
 
             <li
               key="disbursed"
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "7" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
-              onClick={() => handleStageChange("7")}
-            >
-              Disbursed
-            </li>
-           
-            <li
-              key="rejected"
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "8" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
+              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${data.stage === "8" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"}`}
               onClick={() => handleStageChange("8")}
             >
-              Rejected
-            </li>
-
-            <li
-              className={`cursor-pointer px-2 py-1 rounded text-sm flex items-center ${
-                data.stage === "" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-              }`}
-              onClick={() => handleStageChange("")}
-            >
-              All
-            </li>
+              Disbursed
+            </li> 
           </ul>
         </div>
 
@@ -122,7 +119,13 @@ export default function Index({ auth, loans, filters }) {
                 })
                 .map((loan, index) => (
                   <tr key={loan.id} className={index % 2 === 0 ? "bg-gray-50" : ""}>
-                    <td className="border-b p-3 text-gray-700">{loan.first_name || loan.company_name}</td>
+                    <td className="border-b p-3 text-gray-700">
+                      {loan.customer.customer_type === 'individual' ? (
+                        `${loan.customer.first_name} ${loan.customer.other_names ? loan.customer.other_names + ' ' : ''}${loan.customer.surname}`
+                      ) : (
+                        loan.customer.company_name
+                      )}
+                    </td>
                     <td className="border-b p-3 text-gray-700 text-right">
                       {parseFloat(loan.loan_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
@@ -148,3 +151,4 @@ export default function Index({ auth, loans, filters }) {
     </AuthenticatedLayout>
   );
 }
+
