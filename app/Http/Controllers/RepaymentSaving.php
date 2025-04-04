@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Loan,LoanGuarantor,Saving, Repayment, Transaction};
 use App\Models\{BLSPackage, BLSPaymentType, BLSCustomer}; 
-use App\Models\{ChartOfAccount, JournalEntry, JournalEntryLine};
+use App\Models\{ChartOfAccount, ChartOfAccountMapping, JournalEntry, JournalEntryLine};
 use App\Enums\{AccountType,LoanStage,ApprovalStatus,TransactionType};
 
 
@@ -40,7 +40,7 @@ class RepaymentSaving extends Controller
     } 
 
     
-    public function storeRepayment(Request $request, Loan $loan)
+   public function storeRepayment(Request $request, Loan $loan)
     {
         $validatedData = $request->validate([
             'amount' => 'required|numeric|min:0',
@@ -49,26 +49,42 @@ class RepaymentSaving extends Controller
             'payment_date' => 'required|date',
         ]);
 
-
-        // Calculate outstanding balance (you'll need a function for this)
         $outstandingBalance = $this->calculateOutstandingBalance($loan);
 
-        // Ensure repayment amount does not exceed outstanding balance
         if ($validatedData['amount'] > $outstandingBalance) {
             return back()->withErrors(['amount' => 'Repayment amount exceeds outstanding balance.']);
         }
 
         DB::transaction(function () use ($validatedData, $loan, $outstandingBalance) {
-            // 1. Create Repayment record
+
+            $chartOfAccountMapping = ChartOfAccountMapping::firstOrFail();
+            $customer_loan_code = $chartOfAccountMapping->customer_loan_code;
+            $customer_deposit_code = $chartOfAccountMapping->customer_deposit_code;
+            $customer_loan_interest_code = $chartOfAccountMapping->customer_loan_interest_code;
+        
+            $customer = BLSCustomer::findOrFail($loan->customer_id);
+        
+            // Calculate interest already paid
+            $interestPaid = $loan->payments()->sum('interest_paid');
+        
+            // Determine how much interest remains
+            $interestRemaining = max($loan->interest_amount - $interestPaid, 0);
+        
+            // From this installment, pay off interest first
+            $interestDue = min($interestRemaining, $validatedData['amount']);
+            $principalPayment = $validatedData['amount'] - $interestDue;
+        
+            // Create repayment record
             $repayment = $loan->payments()->create([
                 'user_id' => auth()->user()->id,
                 'amount_paid' => $validatedData['amount'],
+                'interest_paid' => $interestDue, // Add this column in your repayments table
                 'payment_date' => $validatedData['payment_date'],
-                'balance_before' => $outstandingBalance, // Store balance before repayment
-                'balance_after' => $outstandingBalance - $validatedData['amount'], // Calculate balance after repayment
+                'balance_before' => $outstandingBalance,
+                'balance_after' => $outstandingBalance - $validatedData['amount'],
             ]);
-
-            // 2. Create Transaction record
+        
+            // Transaction
             $transaction = Transaction::create([
                 'customer_id' => $loan->customer_id,
                 'user_id' => auth()->user()->id,
@@ -79,54 +95,62 @@ class RepaymentSaving extends Controller
                 'transaction_reference' => $this->generateTransactionReference(),
                 'description' => $validatedData['remarks'],
             ]);
-
-            $repayment->transaction_id = $transaction->id;  // Link repayment to transaction
+        
+            $repayment->transaction_id = $transaction->id;
             $repayment->save();
-
-
-            // *** Accounting Entries ***
+        
+            $description = match ($customer->customer_type) {
+                'individual' => 'Loan Repayment - ' . $customer->first_name . ' ' . $customer->surname,
+                'company', 'group' => 'Loan Repayment - ' . $customer->company_name,
+                default => 'Loan Repayment - Customer ' . $loan->customer_id,
+            };
+        
             $journalEntry = JournalEntry::create([
-                'entry_date' => $validatedData['payment_date'],  // Use the payment date for the journal entry
+                'entry_date' => $validatedData['payment_date'],
                 'reference_number' => $transaction->transaction_reference,
-                'description' => "Loan Repayment - " . $loan->customer->fullname, // Or $transaction->description
+                'description' => $description,
                 'transaction_id' => $transaction->id,
             ]);
-
-            // 1. Debit: Cash/Bank Account (Increase)
-            $cashBankAccount = ChartOfAccount::where('account_type', AccountType::Asset->value) // Account type should match your chart of accounts
-                                            ->where('account_name', 'Cash') // Replace 'Cash' with your actual account name for cash/bank
-                                            ->firstOrFail(); 
+        
+            // Debit Cash/Bank
+            $paymentType = BLSPaymentType::findOrFail($validatedData['payment_type_id']);
+            $cashAccount = ChartOfAccount::findOrFail($paymentType->chart_of_account_id);
             JournalEntryLine::create([
                 'journal_entry_id' => $journalEntry->id,
-                'account_id' => $cashBankAccount->id,
+                'account_id' => $cashAccount->id,
                 'debit' => $validatedData['amount'],
                 'credit' => 0,
             ]);
-
-            // 2. Credit: Loan Receivable Account (Decrease)
-            $loanReceivableAccount = ChartOfAccount::where('account_type', AccountType::Asset->value)  // Loans receivable are usually assets
-                                                    ->where('account_name', 'Loan Receivable') // Use your loan receivable account name
-                                                    ->firstOrFail();
-            JournalEntryLine::create([
-                'journal_entry_id' => $journalEntry->id,
-                'account_id' => $loanReceivableAccount->id,
-                'debit' => 0,
-                'credit' => $validatedData['amount'],
-            ]);
-
-
-
-            // 3. Update loan status if fully repaid (optional, if you have a 'repaid' status)
-            if ($outstandingBalance - $validatedData['amount'] <= 0) {  // Or use a more sophisticated check for full repayment
-                $loan->status = 'repaid'; // Replace with your actual status value/enum if needed
+        
+            // Credit Loan Interest
+            if ($interestDue > 0) {
+                JournalEntryLine::create([
+                    'journal_entry_id' => $journalEntry->id,
+                    'account_id' => $customer_loan_interest_code,
+                    'debit' => 0,
+                    'credit' => $interestDue,
+                ]);
+            }
+        
+            // Credit Loan Receivable (principal)
+            if ($principalPayment > 0) {
+                JournalEntryLine::create([
+                    'journal_entry_id' => $journalEntry->id,
+                    'account_id' => $customer_loan_code,
+                    'debit' => 0,
+                    'credit' => $principalPayment,
+                ]);
+            }
+        
+            if ($outstandingBalance - $validatedData['amount'] <= 0) {
+                $loan->status = 'repaid';
                 $loan->save();
             }
-
         });
+        
 
         return redirect()->back()->with('success', 'Repayment successful!');
     }
-
 
     // Helper function to calculate outstanding balance (you'll need to implement the actual logic)
     private function calculateOutstandingBalance(Loan $loan)
@@ -172,32 +196,32 @@ class RepaymentSaving extends Controller
     
     public function storeTransaction(Request $request, $customerId)
     {
-
         $validatedData = $request->validate([
             'amount' => 'required|numeric|min:0',
             'payment_type_id' => 'required|exists:bls_paymenttypes,id',
             'remarks' => 'required|string',
-            'transaction_type' => 'required|in:deposit,withdrawal', // Validate transaction type
+            'transaction_type' => 'required|in:deposit,withdrawal',
         ]);
 
-        //$saving = Saving::where('customer_id', $customerId)->firstOrFail(); // Find the saving 
         $saving = Saving::firstOrCreate(
-            ['customer_id' =>$customerId],
-            ['balance' => 0] // Default balance for new savings accounts
+            ['customer_id' => $customerId],
+            ['balance' => 0]
         );
 
         $amount = $validatedData['amount'];
 
-        DB::transaction(function () use ($validatedData, $saving, $amount, $customerId) {
+        // Load chart of account mapping
+        $chartOfAccountMapping = ChartOfAccountMapping::firstOrFail();
+        $customer_deposit_code = $chartOfAccountMapping->customer_deposit_code;
 
-            // Update the savings balance
+        DB::transaction(function () use ($validatedData, $saving, $amount, $customerId, $customer_deposit_code) {
+
             if ($validatedData['transaction_type'] === 'deposit') {
                 $saving->balance += $amount;
                 $transactionType = TransactionType::Deposit;
             } else {
-                // Check for sufficient funds (important!)
                 if ($saving->balance < $amount) {
-                    return back()->withErrors(['amount' => 'Insufficient funds in savings account.']);
+                    throw ValidationException::withMessages(['amount' => 'Insufficient funds in savings account.']);
                 }
                 $saving->balance -= $amount;
                 $transactionType = TransactionType::Withdrawal;
@@ -205,69 +229,60 @@ class RepaymentSaving extends Controller
 
             $saving->save();
 
-            // Record the transaction
-
             $transaction = $saving->transactions()->create([
-
                 'customer_id' => $customerId,
                 'user_id' => auth()->user()->id,
                 'amount' => $amount,
                 'type' => $transactionType->value,
                 'payment_type_id' => $validatedData['payment_type_id'],
-                'transaction_reference' => $this->generateTransactionReference(),  // Implement this in your controller
+                'transaction_reference' => $this->generateTransactionReference(),
                 'description' => $validatedData['remarks'],
             ]);
 
-            // *** Accounting Entries ***
+            $customer = BLSCustomer::findOrFail($customerId);
+
+            $description = match ($customer->customer_type) {
+                'individual' => 'Savings ' . ucfirst($validatedData['transaction_type']) . ' - ' . $customer->first_name . ' ' . $customer->surname,
+                'company', 'group' => 'Savings ' . ucfirst($validatedData['transaction_type']) . ' - ' . $customer->company_name,
+                default => 'Savings ' . ucfirst($validatedData['transaction_type']) . ' - Customer ' . $customerId,
+            };
+
             $journalEntry = JournalEntry::create([
                 'entry_date' => now()->toDateString(),
                 'reference_number' => $transaction->transaction_reference,
-                'description' => "Savings {$validatedData['transaction_type']} - {$saving->customer->fullname}", // Improved description
+                'description' => $description,
                 'transaction_id' => $transaction->id,
             ]);
 
 
-            $savingsControlAccount = ChartOfAccount::where('account_type', AccountType::Liability->value)
-                                                ->where('account_name', 'Savings Deposit') // Replace with your actual account name
-                                                ->firstOrFail();
-
-            // Determine debit/credit based on transaction type
-            $debit = ($validatedData['transaction_type'] === 'deposit') ? $amount : 0;
-            $credit = ($validatedData['transaction_type'] === 'withdrawal') ? $amount : 0;
-
-            JournalEntryLine::create([
-                'journal_entry_id' => $journalEntry->id,
-                'account_id' => $savingsControlAccount->id, // Savings control account
-                'debit' => $debit,
-                'credit' => $credit,
-            ]);
-
-            // Counterpart account (Cash or Bank, depending on payment type)
+            // Get payment type account (Cash/Bank/etc)
             $paymentType = BLSPaymentType::findOrFail($validatedData['payment_type_id']);
-            $counterpartAccountName = ($paymentType->issaving) ? 'Savings Deposit' : 'Cash'; // Replace with your account names
+            $cashOrBankAccount = ChartOfAccount::findOrFail($paymentType->chart_of_account_id);
 
-            $counterpartAccount = ChartOfAccount::where('account_type', AccountType::Asset->value) // Adjust account type if needed
-                                                ->where('account_name', $counterpartAccountName)
-                                                ->firstOrFail();
+            // Determine debit/credit for savings control account
+            $savingsDebit = ($validatedData['transaction_type'] === 'deposit') ? 0 : $amount;
+            $savingsCredit = ($validatedData['transaction_type'] === 'deposit') ? $amount : 0;
 
-
-            // Reverse debit/credit for counterpart entry
-            $counterpartDebit = $credit; // Reverse for double-entry
-            $counterpartCredit = $debit;
-
-
+            // Journal entry: Savings Control Account (Liability)
             JournalEntryLine::create([
                 'journal_entry_id' => $journalEntry->id,
-                'account_id' => $counterpartAccount->id,
-                'debit' => $counterpartDebit,  // Counterpart entry, reversed
-                'credit' => $counterpartCredit, // Counterpart entry, reversed
-
+                'account_id' => $customer_deposit_code, // Mapped savings liability account
+                'debit' => $savingsDebit,
+                'credit' => $savingsCredit,
             ]);
 
+            // Counterparty entry (Cash or Bank asset account)
+            JournalEntryLine::create([
+                'journal_entry_id' => $journalEntry->id,
+                'account_id' => $cashOrBankAccount->id, // Asset account (Cash/Bank)
+                'debit' => $savingsCredit,
+                'credit' => $savingsDebit,
+            ]);
         });
 
-        return redirect()->back()->with('success', 'Transaction successful!'); // Or return a JSON response if it's an API request
+        return redirect()->back()->with('success', 'Transaction successful!');
     }
+
 
     private function generateTransactionReference()
     {

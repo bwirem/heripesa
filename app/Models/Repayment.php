@@ -12,7 +12,7 @@ class Repayment extends Model
     use HasFactory, SoftDeletes; // Include SoftDeletes if applicable
 
     protected $fillable = [
-        'loan_id', 'user_id', 'transaction_id', 'amount_paid', 'payment_date', 'balance_before', 'balance_after'
+        'loan_id', 'user_id', 'transaction_id', 'amount_paid','interest_paid', 'payment_date', 'balance_before', 'balance_after'
     ];
 
     protected $casts = [

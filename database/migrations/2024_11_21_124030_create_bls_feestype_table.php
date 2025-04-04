@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('bls_feestypes', function (Blueprint $table) {
             $table->id();                       
             $table->string('name');
-            $table->decimal('amount', 10, 2);            
+            $table->decimal('amount', 10, 2);   
+            $table->foreignId('chart_of_account_id')->nullable()->constrained('chart_of_accounts')->onDelete('set null');           
             $table->timestamps();
         });
     }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Head, Link, useForm, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faPlus, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faHome, faPlus, faEdit, faTrash, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import Modal from '@/Components/CustomModal';
 
@@ -18,6 +18,27 @@ export default function Index({ auth, chartofaccounts, filters, accountTypeLabel
         isAlert: false,
         chartofaccountToDeleteId: null,
     });
+
+    // Group chart of accounts by their account_type
+    const groupedAccounts = chartofaccounts.data.reduce((acc, chartofaccount) => {
+        const type = chartofaccount.account_type;
+        if (!acc[type]) {
+            acc[type] = [];
+        }
+        acc[type].push(chartofaccount);
+        return acc;
+    }, {});
+
+    // State to track expanded/collapsed groups
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    // Handle toggle of group visibility
+    const toggleGroup = (type) => {
+        setExpandedGroups((prev) => ({
+            ...prev,
+            [type]: !prev[type],
+        }));
+    };
 
     useEffect(() => {
         get(route("systemconfiguration3.chartofaccounts.index"), { preserveState: true });
@@ -89,56 +110,66 @@ export default function Index({ auth, chartofaccounts, filters, accountTypeLabel
                         >
                             <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create
                         </Link>
+                        <Link
+                            href={route("systemconfiguration3.index")}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex items-center"
+                        >
+                            <FontAwesomeIcon icon={faHome} className="mr-1" /> Home
+                        </Link> 
                     </div>
                 </div>
 
                 {/* Chart of Accounts Table */}
                 <div className="overflow-x-auto">
                     <table className="min-w-full border border-gray-300 shadow-md rounded">
+                        {/* Table Header */}
                         <thead className="bg-gray-50">
-                            <tr>
+                            <tr>                                 
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Account Code</th>      
-                                <th className="border-b p-3 text-center font-medium text-gray-700">Account Name</th>  
-                                <th className="border-b p-3 text-center font-medium text-gray-700">Type</th>  
+                                <th className="border-b p-3 text-center font-medium text-gray-700">Account Name</th>                                  
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Description</th>  
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Status</th>                    
                                 <th className="border-b p-3 text-center font-medium text-gray-700">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {chartofaccounts.data.length > 0 ? (
-                                chartofaccounts.data.map((chartofaccount, index) => (
-                                    <tr key={chartofaccount.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                        <td className="border-b p-3 text-gray-700">{chartofaccount.account_code || "n/a"}</td>   
-                                        <td className="border-b p-3 text-gray-700">{chartofaccount.account_name || "n/a"}</td> 
-                                        <td className="border-b p-3 text-gray-700">
-                                            {accountTypeLabels[chartofaccount.account_type] || "n/a"}
-                                        </td>                                         
-                                        <td className="border-b p-3 text-gray-700">{chartofaccount.description || "n/a"}</td> 
-                                        <td className="border-b p-3 text-gray-700">{chartofaccount.is_active ? "Active" : "Inactive"}</td>                                   
-                                        <td className="border-b p-3 flex space-x-2">
-                                            <Link
-                                                href={route("systemconfiguration3.chartofaccounts.edit", chartofaccount.id)}
-                                                className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex items-center"
-                                            >
-                                                <FontAwesomeIcon icon={faEdit} className="mr-1" />
-                                                Edit
-                                            </Link>
-                                            <button
-                                                onClick={() => handleDelete(chartofaccount.id)}
-                                                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs flex items-center"
-                                            >
-                                                <FontAwesomeIcon icon={faTrash} className="mr-1" />
-                                                Delete
-                                            </button>
+                            {Object.entries(groupedAccounts).map(([type, accounts]) => (
+                                <React.Fragment key={type}>
+                                    {/* Type Header with Toggle Button */}
+                                    <tr>
+                                        <td colSpan="6" className="border-b p-3 text-left text-gray-700 bg-gray-100 font-bold cursor-pointer" onClick={() => toggleGroup(type)}>
+                                            <FontAwesomeIcon icon={expandedGroups[type] ? faChevronUp : faChevronDown} className="mr-2" />
+                                            {accountTypeLabels[type] || "Unknown Type"}
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="border-b p-3 text-center text-gray-700">No chart of accounts found.</td>
-                                </tr>
-                            )}
+
+                                    {/* Account Rows for this type, conditionally rendered based on expanded state */}
+                                    {expandedGroups[type] && accounts.map((chartofaccount, index) => (
+                                        <tr key={chartofaccount.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}> 
+                                            <td className="border-b p-3 text-gray-700">{chartofaccount.account_code || "n/a"}</td>   
+                                            <td className="border-b p-3 text-gray-700">{chartofaccount.account_name || "n/a"}</td> 
+                                            <td className="border-b p-3 text-gray-700">{chartofaccount.description || "n/a"}</td> 
+                                            <td className="border-b p-3 text-gray-700">{chartofaccount.is_active ? "Active" : "Inactive"}</td>                                   
+                                            <td className="border-b p-3 flex space-x-2">
+                                                <Link
+                                                    href={route("systemconfiguration3.chartofaccounts.edit", chartofaccount.id)}
+                                                    className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex items-center"
+                                                >
+                                                    <FontAwesomeIcon icon={faEdit} className="mr-1" />
+                                                    Edit
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(chartofaccount.id)}
+                                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs flex items-center"
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} className="mr-1" />
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </React.Fragment>
+                            ))}
                         </tbody>
                     </table>
                 </div>

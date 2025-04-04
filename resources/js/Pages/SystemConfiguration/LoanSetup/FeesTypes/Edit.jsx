@@ -7,10 +7,11 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import Modal from '@/Components/CustomModal';
 
-export default function Edit({ feestype }) {
+export default function Edit({ feestype , chartofaccounts }) {
     const { data, setData, put, errors, processing, reset } = useForm({
         name: feestype.name,
         amount: feestype.amount,
+        chart_of_account_id: feestype.chart_of_account_id,
     });
 
     const [modalState, setModalState] = useState({
@@ -59,6 +60,7 @@ export default function Edit({ feestype }) {
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="bg-white p-6 shadow sm:rounded-lg">
                         <form onSubmit={handleSubmit} className="space-y-6">
+
                             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                                 {/* Name Input Box */}
                                 <div className="relative flex-1">
@@ -76,6 +78,29 @@ export default function Edit({ feestype }) {
                                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                                 </div>
 
+                                {/* Account Dropdown (First Row) */}
+                                <div className="flex-1">
+                                    <label htmlFor="chart_of_account_id" className="block text-sm font-medium text-gray-700">
+                                    Account Name
+                                    </label>
+                                    <select
+                                        id="chart_of_account_id"
+                                        value={data.chart_of_account_id}
+                                        onChange={(e) => setData("chart_of_account_id", e.target.value)}
+                                        className={`w-full border p-2 rounded text-sm ${errors.chart_of_account_id ? "border-red-500" : ""}`}
+                                    >
+                                        <option value="">Select account...</option>
+                                        {chartofaccounts.map(account => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.account_name} ({account.description + "-" + account.account_code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.chart_of_account_id && <p className="text-sm text-red-600 mt-1">{errors.chart_of_account_id}</p>}
+                                </div>   
+                            </div>
+
+                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">  
                                 <div className="relative flex-1">
                                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mr-2">Amount</label>
                                     <input
@@ -117,6 +142,7 @@ export default function Edit({ feestype }) {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalClose}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

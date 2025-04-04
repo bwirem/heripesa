@@ -292,8 +292,9 @@ class UserPermissionController extends Controller
                 ['key' => 'humanresurces3', 'text' => 'Payroll', 'icon' => 'payroll'],
             ],
             'accounting' => [
-                ['key' => 'accounting0', 'text' => 'General Ledger', 'icon' => 'general_ledger'],
-                ['key' => 'accounting1', 'text' => 'Profit & Loss Statements', 'icon' => 'profit_loss'],
+                ['key' => 'accounting0', 'text' => 'General Journal', 'icon' => 'general_ledger'],
+                ['key' => 'accounting1', 'text' => 'General Ledger', 'icon' => 'general_ledger'],
+                ['key' => 'accounting2', 'text' => 'Profit & Loss Statements', 'icon' => 'profit_loss'],
             ],
             'reporting' => [
                 ['key' => 'reportingAnalytics0', 'text' => 'Loan Portfolio Reports', 'icon' => 'loan_reports'],

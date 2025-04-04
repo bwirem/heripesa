@@ -21,6 +21,9 @@ use App\Http\Controllers\ExpPostController;
 use App\Http\Controllers\SEXPItemGroupController;
 use App\Http\Controllers\SEXPItemController;
 
+use App\Http\Controllers\JournalEntryController;
+use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\ProfitAndLossController;
 
 
 
@@ -34,6 +37,8 @@ use App\Http\Controllers\FacilityOptionController;
 use App\Http\Controllers\FacilityBranchController;
 
 use App\Http\Controllers\ChartOfAccountController;
+use App\Http\Controllers\ChartOfAccountMappingController;
+
 
 use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\UserPermissionController;
@@ -176,7 +181,35 @@ Route::middleware('auth')->group(function () {
         Route::get('/{post}/edit', [ExpPostController::class, 'edit'])->name('edit');
         Route::put('/{post}', [ExpPostController::class, 'update'])->name('update');
         Route::delete('/{post}', [ExpPostController::class, 'destroy'])->name('destroy');
-    });         
+    });   
+    
+    Route::prefix('accounting0')->name('accounting0.')->group(function () {
+        Route::get('/', [JournalEntryController::class, 'index'])->name('index');
+        Route::get('/create', [JournalEntryController::class, 'create'])->name('create');
+        Route::post('/', [JournalEntryController::class, 'store'])->name('store');
+        Route::get('/{post}/edit', [JournalEntryController::class, 'edit'])->name('edit');
+        Route::put('/{post}', [JournalEntryController::class, 'update'])->name('update');
+        Route::delete('/{post}', [JournalEntryController::class, 'destroy'])->name('destroy');
+    });   
+
+    Route::prefix('accounting1')->name('accounting1.')->group(function () {
+        Route::get('/', [GeneralLedgerController::class, 'index'])->name('index');
+        Route::get('/create', [GeneralLedgerController::class, 'create'])->name('create');
+        Route::post('/', [GeneralLedgerController::class, 'store'])->name('store');
+        Route::get('/{post}/edit', [GeneralLedgerController::class, 'edit'])->name('edit');
+        Route::put('/{post}', [GeneralLedgerController::class, 'update'])->name('update');
+        Route::delete('/{post}', [GeneralLedgerController::class, 'destroy'])->name('destroy');
+    }); 
+
+   
+    Route::prefix('accounting2')->name('accounting2.')->group(function () {
+        Route::get('/', [ProfitAndLossController::class, 'index'])->name('index');
+        Route::get('/create', [ProfitAndLossController::class, 'create'])->name('create'); 
+    });       
+        
+
+
+       
     
     // Routes for loan Setup (Version 3)
     Route::prefix('systemconfiguration0')->name('systemconfiguration0.')->group(function () {
@@ -293,6 +326,16 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{chartofaccount}', [ChartOfAccountController::class, 'destroy'])->name('destroy');
             Route::get('/search', [ChartOfAccountController::class, 'search'])->name('search');
         });   
+
+        
+         // --- accountmapping Routes ---
+         Route::prefix('chartofaccountmappings')->name('chartofaccountmappings.')->group(function () {
+            Route::get('/', [ChartOfAccountMappingController::class, 'index'])->name('index');
+            Route::get('/create', [ChartOfAccountMappingController::class, 'create'])->name('create');
+            Route::post('/', [ChartOfAccountMappingController::class, 'store'])->name('store');
+            Route::get('/edit', [ChartOfAccountMappingController::class, 'edit'])->name('edit');
+            Route::put('/', [ChartOfAccountMappingController::class, 'update'])->name('update'); 
+        }); 
 
     });
  

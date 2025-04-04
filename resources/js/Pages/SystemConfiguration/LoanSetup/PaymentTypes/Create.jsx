@@ -7,14 +7,10 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import Modal from '@/Components/CustomModal';
 
-export default function Create() {
+export default function Create({chartofaccounts}) {
     const { data, setData, post, errors, processing, reset } = useForm({
         name: '',  
-        preventoverpay: false,
-        ischeque: false,
-        allowrefund: false,
-        issaving: false,     
-        paymentreference: false,
+        chart_of_account_id: null,        
     });
 
     const [modalState, setModalState] = useState({
@@ -87,64 +83,26 @@ export default function Create() {
 
                             </div>
 
-                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">                              
-                                
-                                <div className="relative flex-1 flex items-center">
-                                    <input
-                                        id="preventoverpay"
-                                        type="checkbox"
-                                        checked={data.preventoverpay}
-                                        onChange={(e) => setData('preventoverpay', e.target.checked)}
-                                    />
-                                    <label htmlFor="preventoverpay" className="ml-2 text-sm font-medium text-gray-700">Prevent Overpay</label>
-                                </div>
-
-                                <div className="relative flex-1 flex items-center">
-                                    <input
-                                        id="ischeque"
-                                        type="checkbox"
-                                        checked={data.ischeque}
-                                        onChange={(e) => setData('ischeque', e.target.checked)}
-                                    />
-                                    <label htmlFor="ischeque" className="ml-2 text-sm font-medium text-gray-700">Is Cheque</label>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">                              
-                                
-                                <div className="relative flex-1 flex items-center">
-                                    <input
-                                        id="allowrefund"
-                                        type="checkbox"
-                                        checked={data.allowrefund}
-                                        onChange={(e) => setData('allowrefund', e.target.checked)}
-                                    />
-                                    <label htmlFor="allowrefund" className="ml-2 text-sm font-medium text-gray-700">Allow Refund</label>
-                                </div>
-
-                                <div className="relative flex-1 flex items-center">
-                                    <input
-                                        id="issaving"
-                                        type="checkbox"
-                                        checked={data.issaving}
-                                        onChange={(e) => setData('issaving', e.target.checked)}
-                                    />
-                                    <label htmlFor="issaving" className="ml-2 text-sm font-medium text-gray-700">Is Saving</label>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">                              
-                               
-                                <div className="relative flex-1 flex items-center">
-                                    <input
-                                        id="paymentreference"
-                                        type="checkbox"
-                                        checked={data.paymentreference}
-                                        onChange={(e) => setData('paymentreference', e.target.checked)}
-                                    />
-                                    <label htmlFor="paymentreference" className="ml-2 text-sm font-medium text-gray-700">Payment Reference</label>
-                                </div>
-                            </div>                                                    
+                             {/* Account Dropdown (First Row) */}
+                            <div className="flex-1">
+                                <label htmlFor="chart_of_account_id" className="block text-sm font-medium text-gray-700">
+                                  Account Name
+                                </label>
+                                <select
+                                    id="chart_of_account_id"
+                                    value={data.chart_of_account_id}
+                                    onChange={(e) => setData("chart_of_account_id", e.target.value)}
+                                    className={`w-full border p-2 rounded text-sm ${errors.chart_of_account_id ? "border-red-500" : ""}`}
+                                >
+                                    <option value="">Select account...</option>
+                                    {chartofaccounts.map(account => (
+                                        <option key={account.id} value={account.id}>
+                                            {account.account_name} ({account.description + "-" + account.account_code})
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.chart_of_account_id && <p className="text-sm text-red-600 mt-1">{errors.chart_of_account_id}</p>}
+                            </div>                                               
 
                             <div className="flex justify-end space-x-4 mt-6">                                
                                 <Link
@@ -174,6 +132,7 @@ export default function Create() {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalClose}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

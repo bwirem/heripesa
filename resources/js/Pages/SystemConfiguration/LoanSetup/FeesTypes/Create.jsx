@@ -7,10 +7,11 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Inertia } from '@inertiajs/inertia';
 import Modal from '@/Components/CustomModal';
 
-export default function Create() {
+export default function Create({ chartofaccounts }) {
     const { data, setData, post, errors, processing, reset } = useForm({
         name: '',  
-        amount: '',  
+        amount: '', 
+        chart_of_account_id: '', 
     });
 
     const [modalState, setModalState] = useState({
@@ -81,6 +82,32 @@ export default function Create() {
                                     {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
                                 </div>  
 
+                                 {/* Account Dropdown (First Row) */}
+                                <div className="flex-1">
+                                    <label htmlFor="chart_of_account_id" className="block text-sm font-medium text-gray-700">
+                                    Account Name
+                                    </label>
+                                    <select
+                                        id="chart_of_account_id"
+                                        value={data.chart_of_account_id}
+                                        onChange={(e) => setData("chart_of_account_id", e.target.value)}
+                                        className={`w-full border p-2 rounded text-sm ${errors.chart_of_account_id ? "border-red-500" : ""}`}
+                                    >
+                                        <option value="">Select account...</option>
+                                        {chartofaccounts.map(account => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.account_name} ({account.description + "-" + account.account_code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.chart_of_account_id && <p className="text-sm text-red-600 mt-1">{errors.chart_of_account_id}</p>}
+                                </div>                                              
+
+                            </div>
+
+                            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">  
+                                
+                                {/* Amount Textbox */}
                                 <div className="relative flex-1">
                                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mr-2">Amount</label>
                                     <input
@@ -92,10 +119,9 @@ export default function Create() {
                                         className={`w-full border p-2 rounded text-sm ${errors.amount ? 'border-red-500' : ''}`}
                                     />
                                     {errors.amount && <p className="text-sm text-red-600 mt-1">{errors.amount}</p>}
-                                </div>                                                        
-
-                            </div>
-                                                    
+                                </div> 
+                            </div> 
+                                                                                    
 
                             <div className="flex justify-end space-x-4 mt-6">
                                 <Link
@@ -125,6 +151,7 @@ export default function Create() {
             <Modal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
+                onConfirm={handleModalClose}
                 title={modalState.isAlert ? "Alert" : "Confirm Action"}
                 message={modalState.message}
                 isAlert={modalState.isAlert}

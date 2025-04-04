@@ -49,10 +49,10 @@ export default function Index() {
                                     <FontAwesomeIcon icon={faListAlt} className="text-white" aria-label="Expense Items" />
                                 </div>
                                 <div className="ml-4">
-                                    <p className="text-gray-600">Other Option</p>
+                                    <p className="text-gray-600">Accounts Mapping</p>
                                     <h3 className="text-2xl font-bold">{expenseItemCount}</h3>
                                     <div className="mt-2">
-                                        <Link href="/addorlistexpense/view" className="text-green-500 hover:underline">Other Option</Link>
+                                        <Link href={route('systemconfiguration3.chartofaccountmappings.index')} className="text-green-500 hover:underline">Accounts Mapping</Link>
                                     </div>
                                 </div>
                             </div>

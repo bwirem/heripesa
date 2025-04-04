@@ -60,7 +60,7 @@ class ChartOfAccountController extends Controller
         // Validate input
         $validated = $request->validate([
             'account_name' => 'required|string|max:255',
-            'account_code' => 'required|string|max:50', // Adjust max length as needed
+            'account_code' => 'required|string|max:50|unique:chart_of_accounts,account_code', // Ensure unique account code
             'account_type' => 'required|in:' . implode(',', array_column(AccountType::cases(), 'value')),
             'description' => 'nullable|string|max:500', // Optional description
             'is_active' => 'boolean',
@@ -78,6 +78,7 @@ class ChartOfAccountController extends Controller
         return redirect()->route('systemconfiguration3.chartofaccounts.index')
             ->with('success', 'Chart of account created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified chartofaccount.
@@ -104,7 +105,7 @@ class ChartOfAccountController extends Controller
         // Validate input
         $validated = $request->validate([
             'account_name' => 'required|string|max:255',
-            'account_code' => 'required|string|max:50', // Adjust max length as needed
+            'account_code' => 'required|string|max:50|unique:chart_of_accounts,account_code,' . $chartofaccount->id, // Ensure unique, ignoring current record
             'account_type' => 'required|in:' . implode(',', array_column(AccountType::cases(), 'value')),
             'description' => 'nullable|string|max:500', // Optional description
             'is_active' => 'boolean',
@@ -121,7 +122,7 @@ class ChartOfAccountController extends Controller
 
         return redirect()->route('systemconfiguration3.chartofaccounts.index')
             ->with('success', 'Chart of account updated successfully.');
-    }
+    }   
 
     /**
      * Remove the specified chartofaccount from storage.

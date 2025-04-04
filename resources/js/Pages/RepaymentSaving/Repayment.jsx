@@ -78,7 +78,7 @@ export default function Repayment({ loanTypes , paymentTypes}) {
             return;
         }
 
-        axios.get(route('systemconfiguration0.customers.search'), { params: { query } })
+        axios.get(route('customer0.search'), { params: { query } })
             .then((response) => {
                 setCustomerSearchResults(response.data.customers.slice(0, 5));
             })

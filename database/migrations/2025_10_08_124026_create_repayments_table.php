@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('transaction_id')->nullable()->constrained('transactions')->onDelete('set null');
             $table->decimal('amount_paid', 10, 2);
+            $table->decimal('interest_paid', 10, 2); // Added
             $table->decimal('balance_before', 10, 2); // Added
             $table->decimal('balance_after', 10, 2); // Added
             $table->date('payment_date');

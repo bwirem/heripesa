@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BLSFeesType;
+use App\Models\ChartOfAccount;
 use Illuminate\Http\Request;
 
 class BLSFeesTypeController extends Controller
@@ -32,7 +33,10 @@ class BLSFeesTypeController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LoanSetup/FeesTypes/Create');
+        $chartofaccounts = ChartOfAccount::all(); // No pagination
+        return inertia('SystemConfiguration/LoanSetup/FeesTypes/Create', [
+            'chartofaccounts' => $chartofaccounts,
+        ]);
     }
 
     /**
@@ -43,7 +47,8 @@ class BLSFeesTypeController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',                  
+            'amount' => 'required|numeric|min:0',
+            'chart_of_account_id' => 'required|exists:chart_of_accounts,id'              
         ]);
 
         // // Create the item
@@ -58,8 +63,10 @@ class BLSFeesTypeController extends Controller
      */
     public function edit(BLSFeesType $feestype)
     {
+        $chartofaccounts = ChartOfAccount::all(); // No pagination
         return inertia('SystemConfiguration/LoanSetup/FeesTypes/Edit', [
             'feestype' => $feestype,
+            'chartofaccounts' => $chartofaccounts,
         ]);
     }
 
@@ -71,7 +78,8 @@ class BLSFeesTypeController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',   
-            'amount' => 'required|numeric|min:0',        
+            'amount' => 'required|numeric|min:0',  
+            'chart_of_account_id' => 'required|exists:chart_of_accounts,id'
         ]);
 
         // Update the item

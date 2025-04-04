@@ -12,13 +12,13 @@ import Modal from '../../Components/CustomModal.jsx';
 export default function Edit({ loan, loanTypes,paymentTypes }) {
     // Form state using Inertia's useForm hook
     const { data, setData, put, errors, processing, reset } = useForm({
-        customer_type: loan.customer_type,
-        first_name: loan.first_name || '',
-        other_names: loan.other_names || '',
-        surname: loan.surname || '',
-        company_name: loan.company_name || '',
-        email: loan.email,
-        phone: loan.phone || '',
+        customer_type: loan.customer.customer_type,
+        first_name: loan.customer.first_name || '',
+        other_names: loan.customer.other_names || '',
+        surname: loan.customer.surname || '',
+        company_name: loan.customer.company_name || '',
+        email: loan.customer.email,
+        phone: loan.customer.phone || '',
         customer_id: loan.customer_id,
         loanType: loan.loan_type || '',
         loanAmount: loan.loan_amount,

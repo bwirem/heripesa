@@ -17,6 +17,7 @@ class BLSFeesType extends Model
     protected $fillable = [      
         'name', 
         'amount', 
+        'chart_of_account_id',
     ];
 
     
