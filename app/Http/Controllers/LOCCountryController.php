@@ -49,7 +49,7 @@ class LOCCountryController extends Controller
         // Create the item
         LOCCountry::create($validated);
 
-        return redirect()->route('systemconfiguration3.countries.index')
+        return redirect()->route('systemconfiguration4.countries.index')
             ->with('success', 'Item created successfully.');
     }
 
@@ -76,7 +76,7 @@ class LOCCountryController extends Controller
         // Update the item
         $country->update($validated);
 
-        return redirect()->route('systemconfiguration3.countries.index')
+        return redirect()->route('systemconfiguration4.countries.index')
             ->with('success', 'Item updated successfully.');
     }
 
@@ -87,7 +87,7 @@ class LOCCountryController extends Controller
     {
         $country->delete();
 
-        return redirect()->route('systemconfiguration3.countries.index')
+        return redirect()->route('systemconfiguration4.countries.index')
             ->with('success', 'Item deleted successfully.');
     }
 

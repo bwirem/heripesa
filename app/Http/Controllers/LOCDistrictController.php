@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\LOCDistrict
-;
+use App\Models\LOCDistrict;
+use App\Models\LOCRegion;
 use Illuminate\Http\Request;
 
 class LOCDistrictController extends Controller
@@ -23,7 +23,7 @@ class LOCDistrictController extends Controller
         $districts = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return inertia('SystemConfiguration/LocationSetup/Districts/Index', [
-            'districts' => $districts,
+            'districts' => $districts,            
             'filters' => $request->only(['search']),
         ]);
     }
@@ -33,7 +33,9 @@ class LOCDistrictController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LocationSetup/Districts/Create');
+        return inertia('SystemConfiguration/LocationSetup/Districts/Create',[
+            'regions' => LOCRegion::all(),
+        ]);
     }
 
     /**
@@ -44,13 +46,13 @@ class LOCDistrictController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'districtgroup_id' => 'nullable|exists:sexp_districtgroups,id',
+            'region_id' => 'nullable|exists:loc_regions,id',
         ]);
 
         // Create the district
         LOCDistrict::create($validated);
 
-        return redirect()->route('systemconfiguration3.districts.index')
+        return redirect()->route('systemconfiguration4.districts.index')
             ->with('success', 'District created successfully.');
     }
 
@@ -61,6 +63,7 @@ class LOCDistrictController extends Controller
     {
         return inertia('SystemConfiguration/LocationSetup/Districts/Edit', [
             'district' => $district,
+            'regions' => LOCRegion::all(),
         ]);
     }
 
@@ -72,13 +75,13 @@ class LOCDistrictController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'districtgroup_id' => 'nullable|exists:sexp_districtgroups,id',
+            'region_id' => 'nullable|exists:loc_regions,id',
         ]);
 
         // Update the district
         $district->update($validated);
 
-        return redirect()->route('systemconfiguration3.districts.index')
+        return redirect()->route('systemconfiguration4.districts.index')
             ->with('success', 'District updated successfully.');
     }
 
@@ -89,7 +92,7 @@ class LOCDistrictController extends Controller
     {
         $district->delete();
 
-        return redirect()->route('systemconfiguration3.districts.index')
+        return redirect()->route('systemconfiguration4.districts.index')
             ->with('success', 'District deleted successfully.');
     }
 

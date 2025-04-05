@@ -15,6 +15,7 @@ export default function Create({customerTypes}) {
         company_name: '',
         email: '',
         phone: '',
+        address: '',
     });
 
     const [modalState, setModalState] = useState({
@@ -165,27 +166,45 @@ export default function Create({customerTypes}) {
 
                             {/* Common Fields */}
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
-                                    className={`w-full border p-2 rounded text-sm ${errors.email ? 'border-red-500' : ''}`}
-                                />
-                                {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                                        <input
+                                            type="email"
+                                            id="email"
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
+                                            className={`w-full border p-2 rounded text-sm ${errors.email ? 'border-red-500' : ''}`}
+                                        />
+                                        {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                                    </div>
+                                    <div>
+                                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                                        <input
+                                            type="text"
+                                            id="phone"
+                                            value={data.phone}
+                                            onChange={(e) => setData('phone', e.target.value)}
+                                            className={`w-full border p-2 rounded text-sm ${errors.phone ? 'border-red-500' : ''}`}
+                                        />
+                                        {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                    </div>
+                                </div>
                             </div>
+
                             <div>
-                                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                                <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
                                 <input
                                     type="text"
-                                    id="phone"
-                                    value={data.phone}
-                                    onChange={(e) => setData('phone', e.target.value)}
-                                    className={`w-full border p-2 rounded text-sm ${errors.phone ? 'border-red-500' : ''}`}
+                                    id="address"
+                                    value={data.address}
+                                    onChange={(e) => setData('address', e.target.value)}
+                                    className={`w-full border p-2 rounded text-sm ${errors.address ? 'border-red-500' : ''}`}
                                 />
-                                {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
                             </div>
+                            
+
 
                             <div className="flex justify-end space-x-4 mt-6"> 
                                 <Link

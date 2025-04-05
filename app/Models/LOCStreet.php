@@ -15,7 +15,7 @@ class LOCStreet extends Model
 
     // Add attributes to $fillable array for mass assignment
     protected $fillable = [       
-        'description', // Add other fields here if needed
-        'ward',
+        'name', // Add other fields here if needed
+        'ward_id',
     ];
 }

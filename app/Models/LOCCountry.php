@@ -12,4 +12,8 @@ class LOCCountry extends Model
      * @var string
      */
     protected $table = 'loc_countries';
+    // Add attributes to $fillable array for mass assignment
+    protected $fillable = [      
+        'name', // Add other fields here if needed       
+    ];
 }

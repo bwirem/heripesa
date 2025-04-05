@@ -15,6 +15,6 @@ class LOCRegion extends Model
 
     // Add attributes to $fillable array for mass assignment
     protected $fillable = [      
-        'description', // Add other fields here if needed       
+        'name', // Add other fields here if needed       
     ];
 }

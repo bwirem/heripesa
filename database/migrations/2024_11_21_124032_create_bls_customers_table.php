@@ -31,6 +31,17 @@ class CreateBlsCustomersTable extends Migration
 
             $table->string('email')->nullable()->unique(); // Email is nullable but should be unique if provided
             $table->string('phone', 13)->nullable(); // Specify length and allow nulls
+
+            $table->foreignId('ward_id')->nullable()->constrained('loc_wards')->onDelete('set null'); 
+            $table->string('address')->nullable();
+
+            $table->integer('stage')->default(1); //Numerical stage.
+
+            $table->string('document_type')->nullable();
+            $table->string('document_number')->nullable();
+            $table->text('document_path')->nullable();
+
+            $table->text('selfie_path')->nullable(); // Store selfie path
             $table->timestamps();
         });
     }

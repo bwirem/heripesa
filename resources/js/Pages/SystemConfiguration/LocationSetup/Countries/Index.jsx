@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Head, Link, useForm, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faPlus, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {faHome, faSearch, faPlus, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 
 import Modal from '@/Components/CustomModal';
@@ -69,9 +69,9 @@ export default function Index({ auth, countries, filters }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold text-gray-800">Item Group List</h2>}
+            header={<h2 className="text-xl font-semibold text-gray-800">Country List</h2>}
         >
-            <Head title="Item Group List" />
+            <Head title="Country List" />
             <div className="container mx-auto p-4">
                 {/* Header Actions */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-4">
@@ -96,6 +96,13 @@ export default function Index({ auth, countries, filters }) {
                         >
                             <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create
                         </Link>
+
+                        <Link
+                            href={route("systemconfiguration4.index")}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex items-center"
+                        >
+                            <FontAwesomeIcon icon={faHome} className="mr-1" /> Home
+                        </Link> 
                     </div>
                     
                 </div>

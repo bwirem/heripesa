@@ -6,6 +6,9 @@ use App\Models\BLSCustomer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Enums\CustomerType;
+use App\Enums\DocumentType;
+
+
 
 class BLSCustomerController extends Controller
 {
@@ -63,6 +66,7 @@ class BLSCustomerController extends Controller
             'company_name' => 'nullable|string|max:255',
             'email' => 'required|email|max:255|unique:bls_customers',
             'phone' => 'nullable|string|max:13',
+            'address' => 'nullable|string|max:255',
         ]);
 
         // Ensure either individual or company fields are filled, but not both
@@ -86,9 +90,9 @@ class BLSCustomerController extends Controller
         }
 
         // Create the customer
-        BLSCustomer::create($validated);
+        $customer = BLSCustomer::create($validated);  
 
-        return redirect()->route('customer0.index')
+        return redirect()->route('customer0.edit', ['customer' => $customer->id])          
             ->with('success', 'Customer created successfully.');
     }
 
@@ -102,7 +106,7 @@ class BLSCustomerController extends Controller
             'surname' => 'nullable|string|max:255',
             'company_name' => 'nullable|string|max:255',
             'email' => 'required|email|max:255|unique:bls_customers',
-            'phone' => 'nullable|string|max:13',
+            'phone' => 'nullable|string|max:13',            
         ]);
 
         // Ensure either individual or company fields are filled, but not both
@@ -149,9 +153,13 @@ class BLSCustomerController extends Controller
         $customerTypes = CustomerType::cases();
         $customerTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $customerTypes);
 
+        $documentTypes= DocumentType::cases();
+        $documentTypes = array_map(fn($type) => ['value' => $type->value, 'label' => $type->label()], $documentTypes);
+
         return inertia('Customers/Edit', [
             'customer' => $customer,
             'customerTypes' => $customerTypes,
+            'documentTypes' => $documentTypes,
         ]);
     }
 
@@ -169,6 +177,7 @@ class BLSCustomerController extends Controller
             'company_name' => 'nullable|string|max:255',
             'email' => 'required|email|max:255|unique:bls_customers,email,' . $customer->id,  // Ignore current customer's email for unique check
             'phone' => 'nullable|string|max:13',
+            'address' => 'nullable|string|max:255',
         ]);
 
         // Ensure either individual or company fields are filled, but not both

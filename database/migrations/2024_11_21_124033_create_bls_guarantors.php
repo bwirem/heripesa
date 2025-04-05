@@ -29,7 +29,18 @@ return new class extends Migration
             $table->string('company_name')->nullable(); // Required for companies
             
             $table->string('email')->nullable()->unique(); // Email is nullable but should be unique if provided
-            $table->string('phone', 13)->nullable(); // Phone number, allowing nulls            
+            $table->string('phone', 13)->nullable(); // Phone number, allowing nulls             
+            
+            $table->foreignId('ward_id')->nullable()->constrained('loc_wards')->onDelete('set null'); // Reference to Loan Package  
+            $table->string('address')->nullable();
+
+            $table->integer('stage')->default(1); //Numerical stage.
+
+            $table->string('document_type')->nullable(); 
+            $table->string('document_number')->nullable();
+            $table->text('document_path')->nullable(); // Store document path
+
+            $table->text('selfie_path')->nullable(); // Store selfie path
           
             $table->timestamps();
         });

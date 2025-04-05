@@ -49,7 +49,7 @@ class LOCRegionController extends Controller
         // Create the item
         LOCRegion::create($validated);
 
-        return redirect()->route('systemconfiguration3.regions.index')
+        return redirect()->route('systemconfiguration4.regions.index')
             ->with('success', 'Item created successfully.');
     }
 
@@ -76,7 +76,7 @@ class LOCRegionController extends Controller
         // Update the item
         $region->update($validated);
 
-        return redirect()->route('systemconfiguration3.regions.index')
+        return redirect()->route('systemconfiguration4.regions.index')
             ->with('success', 'Item updated successfully.');
     }
 
@@ -87,7 +87,7 @@ class LOCRegionController extends Controller
     {
         $region->delete();
 
-        return redirect()->route('systemconfiguration3.regions.index')
+        return redirect()->route('systemconfiguration4.regions.index')
             ->with('success', 'Item deleted successfully.');
     }
 

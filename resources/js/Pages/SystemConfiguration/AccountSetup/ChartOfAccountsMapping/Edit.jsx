@@ -85,7 +85,7 @@ export default function Edit({ chartofaccountsmapping, chartofaccounts }) {
                                     <option value="">Select account...</option>
                                     {chartofaccounts.map(account => (
                                         <option key={account.id} value={account.id}>
-                                            {account.account_name} ({account.account_code})
+                                            {account.account_name} ({account.description + "-" + account.account_code})
                                         </option>
                                     ))}
                                 </select>
@@ -127,7 +127,7 @@ export default function Edit({ chartofaccountsmapping, chartofaccounts }) {
                                     <option value="">Select account...</option>
                                     {chartofaccounts.map(account => (
                                         <option key={account.id} value={account.id}>
-                                            {account.account_name} ({account.account_code})
+                                            {account.account_name} ({account.description + "-" + account.account_code})
                                         </option>
                                     ))}
                                 </select>

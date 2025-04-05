@@ -5,8 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CustomerType;
 
-
-
 class BLSCustomer extends Model
 {
     /**
@@ -25,6 +23,7 @@ class BLSCustomer extends Model
         'company_name',
         'email',
         'phone',
+        'address'
     ];
 
     /**

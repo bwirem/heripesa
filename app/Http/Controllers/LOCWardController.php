@@ -1,8 +1,9 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\LOCWard
-;
+use App\Models\LOCRegion;
+use App\Models\LOCDistrict;
+use App\Models\LOCWard;
 use Illuminate\Http\Request;
 
 class LOCWardController extends Controller
@@ -33,7 +34,10 @@ class LOCWardController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LocationSetup/Wards/Create');
+        return inertia('SystemConfiguration/LocationSetup/Wards/Create', [
+            'districts' => LOCDistrict::all(),
+            'regions' => LOCRegion::all(),
+        ]);
     }
 
     /**
@@ -44,13 +48,13 @@ class LOCWardController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'wardgroup_id' => 'nullable|exists:sexp_wardgroups,id',
+            'district_id' => 'nullable|exists:loc_districts,id',
         ]);
 
         // Create the ward
         LOCWard::create($validated);
 
-        return redirect()->route('systemconfiguration3.wards.index')
+        return redirect()->route('systemconfiguration4.wards.index')
             ->with('success', 'Ward created successfully.');
     }
 
@@ -61,6 +65,8 @@ class LOCWardController extends Controller
     {
         return inertia('SystemConfiguration/LocationSetup/Wards/Edit', [
             'ward' => $ward,
+            'districts' => LOCDistrict::all(),
+            'regions' => LOCRegion::all(),
         ]);
     }
 
@@ -72,13 +78,13 @@ class LOCWardController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'wardgroup_id' => 'nullable|exists:sexp_wardgroups,id',
+            'district_id' => 'nullable|exists:loc_districts,id',
         ]);
 
         // Update the ward
         $ward->update($validated);
 
-        return redirect()->route('systemconfiguration3.wards.index')
+        return redirect()->route('systemconfiguration4.wards.index')
             ->with('success', 'Ward updated successfully.');
     }
 
@@ -89,7 +95,7 @@ class LOCWardController extends Controller
     {
         $ward->delete();
 
-        return redirect()->route('systemconfiguration3.wards.index')
+        return redirect()->route('systemconfiguration4.wards.index')
             ->with('success', 'Ward deleted successfully.');
     }
 

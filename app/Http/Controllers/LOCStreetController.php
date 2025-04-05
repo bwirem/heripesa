@@ -1,8 +1,10 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\LOCStreet
-;
+use App\Models\LOCRegion;
+use App\Models\LOCDistrict;
+use App\Models\LOCWard;
+use App\Models\LOCStreet;
 use Illuminate\Http\Request;
 
 class LOCStreetController extends Controller
@@ -33,7 +35,11 @@ class LOCStreetController extends Controller
      */
     public function create()
     {
-        return inertia('SystemConfiguration/LocationSetup/Streets/Create');
+        return inertia('SystemConfiguration/LocationSetup/Streets/Create', [
+            'regions' => LOCRegion::all(),
+            'districts' => LOCDistrict::all(),
+            'wards' => LOCWard::all(),
+        ]);
     }
 
     /**
@@ -44,13 +50,13 @@ class LOCStreetController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'streetgroup_id' => 'nullable|exists:sexp_streetgroups,id',
+            'ward_id' => 'nullable|exists:loc_wards,id',
         ]);
 
         // Create the street
         LOCStreet::create($validated);
 
-        return redirect()->route('systemconfiguration3.streets.index')
+        return redirect()->route('systemconfiguration4.streets.index')
             ->with('success', 'Street created successfully.');
     }
 
@@ -61,6 +67,9 @@ class LOCStreetController extends Controller
     {
         return inertia('SystemConfiguration/LocationSetup/Streets/Edit', [
             'street' => $street,
+            'regions' => LOCRegion::all(),
+            'districts' => LOCDistrict::all(),
+            'wards' => LOCWard::all(),
         ]);
     }
 
@@ -72,13 +81,13 @@ class LOCStreetController extends Controller
         // Validate input
         $validated = $request->validate([
             'name' => 'required|string|max:255',            
-            'streetgroup_id' => 'nullable|exists:sexp_streetgroups,id',
+            'ward_id' => 'nullable|exists:loc_wards,id',
         ]);
 
         // Update the street
         $street->update($validated);
 
-        return redirect()->route('systemconfiguration3.streets.index')
+        return redirect()->route('systemconfiguration4.streets.index')
             ->with('success', 'Street updated successfully.');
     }
 
@@ -89,7 +98,7 @@ class LOCStreetController extends Controller
     {
         $street->delete();
 
-        return redirect()->route('systemconfiguration3.streets.index')
+        return redirect()->route('systemconfiguration4.streets.index')
             ->with('success', 'Street deleted successfully.');
     }
 
