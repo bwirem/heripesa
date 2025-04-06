@@ -304,8 +304,17 @@ export default function ManagerReview({ loan, loanTypes }) {
                                     </div>
                                 ) : (
                                     <p className="text-sm text-gray-500">No guarantors added.</p>
-                                )}
+                                )}                                
                             </section>
+
+
+                            <section>
+                                <h4 className="text-md font-semibold text-gray-700 mb-3">Declaration Remarks</h4>
+                                <div>                                    
+                                    <p className="mt-1 text-sm text-gray-500">{loan.submit_remarks}</p>
+                                </div>
+                            </section>    
+
 
                             {/* Stage Selection */}
                             <section>
@@ -321,7 +330,9 @@ export default function ManagerReview({ loan, loanTypes }) {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {data.approvals.map((approval, index) => (
+                                        {data.approvals
+                                            .filter(approval => approval.remarks && approval.remarks.trim() !== '') // Filter out approvals with null or empty remarks
+                                            .map((approval, index) => (
                                                 <tr key={index}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {approval.remarks || 'N/A'}

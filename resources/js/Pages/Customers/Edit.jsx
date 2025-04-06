@@ -7,7 +7,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import Modal from '@/Components/CustomModal';
 
 export default function Edit({ customer,customerTypes,documentTypes }) {
-    const { data, setData, put, errors, processing, reset } = useForm({
+    const { data, setData, post, errors, processing, reset } = useForm({
         customer_type: customer.customer_type,
         first_name: customer.first_name || '',
         other_names: customer.other_names || '',
@@ -71,7 +71,7 @@ export default function Edit({ customer,customerTypes,documentTypes }) {
             formData.append(key, data[key]);
         }
 
-        put(route('customer0.update', customer.id), formData, {
+        post(route('customer0.update', customer.id), formData, {
             forceFormData: true, // Ensure Inertia uses FormData when files are present            
             onSuccess: () => {
                 setIsSaving(false);

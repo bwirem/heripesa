@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Loan;
 use App\Models\LoanGuarantor;
+use App\Models\BLSCustomer;
+
 use App\Models\BLSPackage;
 use App\Models\FacilityBranch;
 use App\Models\FacilityOption;
@@ -81,20 +83,32 @@ class LoanApplicationController extends Controller
      * @param  int  $loan
      * @return \Illuminate\Http\JsonResponse
      */
+    
     public function getStage($customer_id)
     {
+        // Find the most recent loan for the customer where stage is 3 (approved stage)
+        $customer = BLSCustomer::where('id', $customer_id)->where('stage', 3)->latest()->first();
+
+        // If no customer with stage 3 exists, it means the customer has not reached approval stage
+        if (!$customer) {
+            return response()->json([
+                'allowed' => false, // Customer has not reached stage 3 (approved)
+                'message' => 'This customer has not been approved for a loan application yet.'
+            ]);
+        }
+
         // Find the most recent loan for the customer
         $loan = Loan::where('customer_id', $customer_id)->latest()->first();
 
-        // If no loan exists, it means the customer is new
+        // If no loan exists, it means the customer is new and can apply
         if (!$loan) {
             return response()->json([
-                'allowed' => true, // New customers are allowed to apply
+                'allowed' => true, // New customer is allowed to apply for a loan
                 'message' => 'This is a new customer. Loan application is allowed.'
             ]);
         }
 
-        // If the loan's stage is 10 (Repaid), allow new loan application
+        // If the loan's stage is 10 (Repaid), allow a new loan application
         if ($loan->stage == 10) {
             return response()->json([
                 'allowed' => true,
@@ -105,9 +119,10 @@ class LoanApplicationController extends Controller
         // If the loan stage is different than 10 (e.g., unpaid or in-progress), block the new loan application
         return response()->json([
             'allowed' => false,
-            'message' => 'This customer has an unpaid loan or an ongoing loan. New applications are not allowed.'
+            'message' => 'This customer has an unpaid or ongoing loan. New applications are not allowed.'
         ]);
     }
+
 
     /**
      * Show the form for creating a new loan.

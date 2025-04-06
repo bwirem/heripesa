@@ -126,7 +126,7 @@ export default function Index({ auth, customers, filters }) {
                                                 className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs flex items-center"
                                             >
                                                 <FontAwesomeIcon icon={faEdit} className="mr-1" />
-                                                Edit
+                                                {customer.stage === 2 ? "Process" : customer.stage === 3 ? "Preview" : "Edit"}
                                             </Link>
                                             <button
                                                 onClick={() => handleDelete(customer.id)}

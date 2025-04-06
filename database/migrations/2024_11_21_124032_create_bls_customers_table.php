@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\CustomerType;
-
+use App\Enums\DocumentType;
 
 
 class CreateBlsCustomersTable extends Migration
@@ -37,11 +37,15 @@ class CreateBlsCustomersTable extends Migration
 
             $table->integer('stage')->default(1); //Numerical stage.
 
-            $table->string('document_type')->nullable();
+            $table->enum('document_type', array_map(fn($type) => $type->value, DocumentType::cases()))->default(DocumentType::NIDA->value);
+
             $table->string('document_number')->nullable();
             $table->text('document_path')->nullable();
 
             $table->text('selfie_path')->nullable(); // Store selfie path
+
+            $table->text('remarks')->nullable();
+
             $table->timestamps();
         });
     }

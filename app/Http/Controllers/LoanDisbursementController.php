@@ -56,7 +56,7 @@ class LoanDisbursementController extends Controller
             });
         }
 
-        $query->where('stage', '>', '6');
+        $query->where('stage', '=', '7');
 
         // Filtering by stage
         if ($request->filled('stage')) {

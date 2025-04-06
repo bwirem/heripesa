@@ -73,7 +73,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [BLSCustomerController::class, 'store'])->name('store'); 
         Route::post('/directstore', [BLSCustomerController::class, 'directstore'])->name('directstore');
         Route::get('/{customer}/edit', [BLSCustomerController::class, 'edit'])->name('edit'); 
-        Route::put('/{customer}', [BLSCustomerController::class, 'update'])->name('update');
+        Route::post('/{customer}', [BLSCustomerController::class, 'update'])->name('update');
+        Route::post('approve/{customer}', [BLSCustomerController::class, 'approve'])->name('approve'); 
+        Route::get('/{customer}/back', [BLSCustomerController::class, 'back'])->name('back');
         Route::get('/search', [BLSCustomerController::class, 'search'])->name('search'); 
     });
 

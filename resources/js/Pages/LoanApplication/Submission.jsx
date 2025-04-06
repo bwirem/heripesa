@@ -327,7 +327,7 @@ export default function Submission({ loan, loanTypes }) {
                     </p>
 
                     <label htmlFor="Submit_remarks" className="block text-sm font-medium text-gray-700 mt-4">
-                        Submit Remarks:
+                        Declaration Remarks:
                     </label>
                     <textarea
                         id="Submit_remarks"

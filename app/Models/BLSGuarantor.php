@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\CustomerType;
+use App\Enums\DocumentType;
 
 
 class BLSGuarantor extends Model
@@ -24,6 +25,12 @@ class BLSGuarantor extends Model
         'company_name',
         'email',
         'phone',
+        'stage',
+        'document_type',
+        'document_number',
+        'document_path',
+        'selfie_path',
+        'remarks',
     ];
 
     /**
@@ -33,6 +40,7 @@ class BLSGuarantor extends Model
      */
     protected $casts = [
         'guarantor_type' => 'string',
+        'document_type' => 'string',
     ];
 
     // Accessor to get the human-readable label
@@ -40,4 +48,11 @@ class BLSGuarantor extends Model
     {
         return CustomerType::from($this->guarantor_type)->label();
     }
+
+    // Accessor to get the human-readable label
+    public function getDocumentTypeNameAttribute()
+    {
+        return DocumentType::from($this->document_type)->label();
+    }
+
 }
