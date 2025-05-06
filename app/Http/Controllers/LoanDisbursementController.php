@@ -29,51 +29,66 @@ class LoanDisbursementController extends Controller
     /**
      * Display a listing of loans.
      */
-    public function index(Request $request)
-    {
-        
-        $user = auth()->user();
-        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
-
-        // If the user has no facility branches, return empty loans
-        if ($facilityBranches->isEmpty()) {
-            return inertia('LoanDisbursement/Index', [
-                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
-                'facilityBranches' => $facilityBranches,
-                'filters' => $request->only(['search', 'stage']),
-            ]);
-        }
-        
-        $query = Loan::with(['customer', 'loanPackage', 'user']);
-
-        // Search functionality (search customer's name, company name)
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('other_names', 'like', '%' . $request->search . '%')
-                    ->orWhere('surname', 'like', '%' . $request->search . '%')
-                    ->orWhere('company_name', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        $query->where('stage', '=', '7');
-
-        // Filtering by stage
-        if ($request->filled('stage')) {
-            $query->where('stage', $request->stage);
-        }
-
-
-
-        // Only show stages less than or equal to 3
-        $loans = $query->orderBy('created_at', 'desc')->paginate(10);              
-
-        return inertia('LoanDisbursement/Index', [
-            'loans' => $loans,
-            'facilityBranches' => $facilityBranches,
-            'filters' => $request->only(['search', 'stage']),
-        ]);
-    }
+    
+     public function index(Request $request)
+     {
+         $user = auth()->user();
+     
+         // 1. Get ALL facility branches associated with the authenticated user
+         $userFacilityBranches = $user->facilityBranches()->get();
+     
+         // 2. If the user has no facility branches, return empty loans
+         if ($userFacilityBranches->isEmpty()) {
+             return inertia('LoanDisbursement/Index', [
+                 'loans' => ['data' => []], // Or an empty paginator: Loan::query()->paginate(10)
+                 'facilityBranches' => collect(), // Pass empty collection
+                 'filters' => $request->only(['search', 'facilitybranch_id']), // Stage is fixed, so not needed in filters here
+             ]);
+         }
+     
+         // 3. Get the IDs of the user's facility branches to filter loans
+         $userFacilityBranchIds = $userFacilityBranches->pluck('id')->toArray();
+     
+         // 4. Build the Loan query
+         $query = Loan::with(['customer', 'loanPackage', 'user']);
+     
+         // 4a. CRITICAL: Filter loans to only those in the user's assigned facility branches
+         $query->whereIn('facilitybranch_id', $userFacilityBranchIds);
+     
+         // 4b. Set the specific stage for disbursement
+         $query->where('stage', '=', '7'); // Only loans at stage 7 (ready for disbursement)
+     
+         // 4c. Search functionality (corrected to search on customer)
+         if ($request->filled('search')) {
+             $query->whereHas('customer', function ($q) use ($request) {
+                 $q->where('first_name', 'like', '%' . $request->search . '%')
+                   ->orWhere('other_names', 'like', '%' . $request->search . '%')
+                   ->orWhere('surname', 'like', '%' . $request->search . '%')
+                   ->orWhere('company_name', 'like', '%' . $request->search . '%');
+             });
+         }
+     
+         // 4d. Filter by specific facility branch (if requested by user via UI filter)
+         if ($request->filled('facilitybranch_id')) {
+             // Ensure the requested facilitybranch_id is one the user has access to
+             if (in_array($request->facilitybranch_id, $userFacilityBranchIds)) {
+                 $query->where('facilitybranch_id', $request->facilitybranch_id);
+             } else {
+                 // If user tries to filter by a branch they don't own, return no results for that filter attempt
+                 $query->whereRaw('1 = 0'); // Effectively makes the query return nothing
+             }
+         }
+     
+         // 5. Paginate the results
+         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
+     
+         // 6. Return data to Inertia view
+         return inertia('LoanDisbursement/Index', [
+             'loans' => $loans,
+             'facilityBranches' => $userFacilityBranches, // Pass all user's branches for dropdown
+             'filters' => $request->only(['search', 'facilitybranch_id']), // Stage is fixed to 7
+         ]);
+     } 
     
     /**
      * Show the form for editing the specified loan.

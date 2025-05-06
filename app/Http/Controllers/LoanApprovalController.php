@@ -24,23 +24,33 @@ class LoanApprovalController extends Controller
     /**
      * Display a listing of loans.
      */
-    public function index(Request $request)
+   
+     public function index(Request $request)
     {
         $user = auth()->user();
-        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
 
-        // If the user has no facility branches, return empty loans
-        if ($facilityBranches->isEmpty()) {
+        // 1. Get ALL facility branches associated with the authenticated user
+        $userFacilityBranches = $user->facilityBranches()->get();
+
+        // 2. If the user has no facility branches, return empty loans
+        if ($userFacilityBranches->isEmpty()) {
             return inertia('LoanApproval/Index', [
-                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
-                'facilityBranches' => $facilityBranches,
-                'filters' => $request->only(['search', 'stage']),
+                'loans' => ['data' => []], // Or an empty paginator: Loan::query()->paginate(10)
+                'facilityBranches' => collect(), // Pass empty collection
+                'filters' => $request->only(['search', 'stage', 'facilitybranch_id']),
             ]);
         }
 
+        // 3. Get the IDs of the user's facility branches to filter loans
+        $userFacilityBranchIds = $userFacilityBranches->pluck('id')->toArray();
+
+        // 4. Build the Loan query
         $query = Loan::with(['customer', 'loanPackage', 'user']);
 
-        // Search functionality (search customer's name, company name)
+        // 4a. CRITICAL: Filter loans to only those in the user's assigned facility branches
+        $query->whereIn('facilitybranch_id', $userFacilityBranchIds);
+
+        // 4b. Search functionality
         if ($request->filled('search')) {
             $query->whereHas('customer', function ($q) use ($request) {
                 $q->where('first_name', 'like', '%' . $request->search . '%')
@@ -50,34 +60,49 @@ class LoanApprovalController extends Controller
             });
         }
 
-        // Enforce stage range (4 to 6)
-        $query->whereBetween('stage', [4, 6]);
+        // 4c. Enforce base stage range for approvals (e.g., 4 to 6)
+        $query->whereBetween('stage', [4, 6]); // Assuming stages 4, 5, 6 are for approval
 
-        // Filtering by stage
+        // 4d. Filtering by specific stage(s) from the request
+        // This allows further refinement within the 4-6 range
         if ($request->filled('stage')) {
-            $stages = explode(',', $request->stage);
-
-            if (count($stages) > 1) {
-                $query->whereIn('stage', $stages);
-            } else {
-                $query->where('stage', $stages[0]);
+            $stages = explode(',', $request->stage); // Allows comma-separated stages like "4,5"
+            $validStages = [];
+            foreach ($stages as $stage) {
+                $s = (int)trim($stage);
+                if ($s >= 4 && $s <= 6) { // Ensure requested stages are within the valid approval range
+                    $validStages[] = $s;
+                }
+            }
+            if (!empty($validStages)) {
+                $query->whereIn('stage', $validStages);
             }
         }
 
-        // Filter by facility branch
+        // 4e. Filter by specific facility branch (if requested by user via UI filter)
+        // This will further filter from the branches the user already has access to (due to whereIn)
         if ($request->filled('facilitybranch_id')) {
-            $query->where('facilitybranch_id', $request->facilitybranch_id);
+            // Ensure the requested facilitybranch_id is one the user has access to
+            if (in_array($request->facilitybranch_id, $userFacilityBranchIds)) {
+                $query->where('facilitybranch_id', $request->facilitybranch_id);
+            } else {
+                // If user tries to filter by a branch they don't own, return no results for that filter
+                // Or handle as an error/ignore. For now, effectively makes query return nothing if this condition is met.
+                $query->whereRaw('1 = 0');
+            }
         }
 
+        // 5. Paginate the results
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
 
+        // 6. Return data to Inertia view
         return inertia('LoanApproval/Index', [
             'loans' => $loans,
-            'facilityBranches' => $facilityBranches,
-            'filters' => $request->only(['search', 'stage']),
+            'facilityBranches' => $userFacilityBranches, // Pass all user's branches for dropdown
+            'filters' => $request->only(['search', 'stage', 'facilitybranch_id']),
         ]);
     }
-   
+    
     /**
      * Show the form for editing the specified loan.
      */

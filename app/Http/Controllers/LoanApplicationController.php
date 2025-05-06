@@ -30,22 +30,32 @@ class LoanApplicationController extends Controller
      */
     public function index(Request $request)
     {
-
+        
         $user = auth()->user();
-        $facilityBranches = $user->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
 
-        // If the user has no facility branches, return empty loans
-        if ($facilityBranches->isEmpty()) {
+        // 1. Get ALL facility branches associated with the authenticated user
+        $userFacilityBranches = $user->facilityBranches()->get();
+
+        // 2. If the user has no facility branches, return empty loans
+        //    (and an empty collection for facilityBranches to pass to the view)
+        if ($userFacilityBranches->isEmpty()) {
             return inertia('LoanApplication/Index', [
-                'loans' => $loans ?? ['data' => []], // Ensure loans is never undefined
-                'facilityBranches' => $facilityBranches,
-                'filters' => $request->only(['search', 'stage']),
+                'loans' => ['data' => []], // Or an empty paginator: Loan::query()->paginate(10)
+                'facilityBranches' => collect(), // Pass empty collection
+                'filters' => $request->only(['search', 'stage', 'facilitybranch_id']), // Include facilitybranch_id
             ]);
         }
 
+        // 3. Get the IDs of the user's facility branches to filter loans
+        $userFacilityBranchIds = $userFacilityBranches->pluck('id')->toArray();
+
+        // 4. Build the Loan query
         $query = Loan::with(['customer', 'loanPackage', 'user']);
 
-        // Search functionality (search customer's name, company name)
+        // 4a. CRITICAL: Filter loans to only those in the user's assigned facility branches
+        $query->whereIn('facilitybranch_id', $userFacilityBranchIds);
+
+        // 4b. Search functionality
         if ($request->filled('search')) {
             $query->whereHas('customer', function ($q) use ($request) {
                 $q->where('first_name', 'like', '%' . $request->search . '%')
@@ -55,24 +65,36 @@ class LoanApplicationController extends Controller
             });
         }
 
+        // 4c. Default stage filter (always apply this base filter)
         $query->where('stage', '<=', '3');
-        // Filtering by stage
+
+        // 4d. Filtering by specific stage (if requested, overrides/refines the default)
         if ($request->filled('stage')) {
             $query->where('stage', $request->stage);
         }
 
+        // 4e. Filtering by specific facility branch (if requested)
+        //    This will further filter from the branches the user already has access to (due to whereIn)
         if ($request->filled('facilitybranch_id')) {
+            // Optional: You might want to double-check if $request->facilitybranch_id is in $userFacilityBranchIds
+            // if (in_array($request->facilitybranch_id, $userFacilityBranchIds)) {
+            //     $query->where('facilitybranch_id', $request->facilitybranch_id);
+            // } else {
+            //     // Handle case where user tries to filter by a branch they don't own - e.g., return no results
+            //     $query->whereRaw('1 = 0'); // Effectively makes the query return nothing
+            // }
+            // Simpler: just apply the filter. The `whereIn` above provides the base security.
             $query->where('facilitybranch_id', $request->facilitybranch_id);
         }
 
-        // Only show stages less than or equal to 3
+        // 5. Paginate the results
         $loans = $query->orderBy('created_at', 'desc')->paginate(10);
-        $facilityBranches = auth()->user()->facilityBranches()->where('facilitybranches.id', auth()->id())->get();
 
+        // 6. Return data to Inertia view
         return inertia('LoanApplication/Index', [
             'loans' => $loans,
-            'facilityBranches' => $facilityBranches,            
-            'filters' => $request->only(['search', 'stage']),
+            'facilityBranches' => $userFacilityBranches, // Pass the user's branches for dropdown
+            'filters' => $request->only(['search', 'stage', 'facilitybranch_id']), // Include facilitybranch_id
         ]);
     }
 
@@ -119,8 +141,10 @@ class LoanApplicationController extends Controller
         // If the loan stage is different than 10 (e.g., unpaid or in-progress), block the new loan application
         return response()->json([
             'allowed' => false,
-            'message' => 'This customer has an unpaid or ongoing loan. New applications are not allowed.'
+            'message' => 'This customer has an unpaid or ongoing loan. Would you like to submit a top-up application?',
+            'highlight' => 'Would you like to submit a top-up application?'
         ]);
+        
     }
 
 
